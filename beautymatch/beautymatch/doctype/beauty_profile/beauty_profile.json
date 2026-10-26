@@ -41,7 +41,7 @@
       "fieldname": "crm_contact",
       "fieldtype": "Link",
       "label": "CRM Contact",
-      "options": "CRM Contact"
+      "options": "CRM Contacts"
     },
     {
       "fieldname": "full_name",
