@@ -1,0 +1,147 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-10-27 16:16:36.939870",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "customer_request_section",
+  "crm_lead",
+  "beauty_profile",
+  "request_id",
+  "profile_snapshot",
+  "recommendation_criteria_section",
+  "requested_category",
+  "max_budget",
+  "number_of_eligible_products",
+  "number_of_recommendations",
+  "status",
+  "algorithm_version",
+  "settings_snapshot",
+  "recommendation_results_section",
+  "recommendation_items",
+  "result_message"
+ ],
+ "fields": [
+  {
+   "fieldname": "customer_request_section",
+   "fieldtype": "Section Break",
+   "label": "Customer and Request"
+  },
+  {
+   "fieldname": "crm_lead",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "CRM Lead",
+   "options": "CRM Lead",
+   "reqd": 1
+  },
+  {
+   "fieldname": "beauty_profile",
+   "fieldtype": "Link",
+   "label": "Beauty Profile",
+   "options": "Beauty Profile",
+   "reqd": 1
+  },
+  {
+   "fieldname": "request_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Request ID",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "profile_snapshot",
+   "fieldtype": "JSON",
+   "label": "Profile Snapshot",
+   "reqd": 1
+  },
+  {
+   "fieldname": "recommendation_criteria_section",
+   "fieldtype": "Section Break",
+   "label": "Recommendation Criteria"
+  },
+  {
+   "fieldname": "requested_category",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Requested Category",
+   "options": "CLEANSER\nTONER\nSERUM\nMOISTURIZER\nSUNSCREEN",
+   "reqd": 1
+  },
+  {
+   "fieldname": "max_budget",
+   "fieldtype": "Currency",
+   "label": "Max Budget",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "number_of_eligible_products",
+   "fieldtype": "Int",
+   "label": "Number of Eligible Products",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "number_of_recommendations",
+   "fieldtype": "Int",
+   "label": "Number of Recommendations",
+   "reqd": 1
+  },
+  {
+   "default": "Generated",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Generated\nViewed\nFeedback Received\nFollow-up Created\nClosed",
+   "reqd": 1
+  },
+  {
+   "default": "v1.0",
+   "fieldname": "algorithm_version",
+   "fieldtype": "Data",
+   "label": "Algorithm Version",
+   "reqd": 1
+  },
+  {
+   "fieldname": "settings_snapshot",
+   "fieldtype": "JSON",
+   "label": "Settings Snapshot",
+   "reqd": 1
+  },
+  {
+   "fieldname": "recommendation_results_section",
+   "fieldtype": "Section Break",
+   "label": "Recommendation Results"
+  },
+  {
+   "fieldname": "recommendation_items",
+   "fieldtype": "Table",
+   "label": "Recommendation Items",
+   "options": "Recommendation Item"
+  },
+  {
+   "fieldname": "result_message",
+   "fieldtype": "Small Text",
+   "label": "Result Message"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-10-27 16:16:36.939870",
+ "modified_by": "Administrator",
+ "module": "BeautyMatch",
+ "name": "Recommendation Session",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
