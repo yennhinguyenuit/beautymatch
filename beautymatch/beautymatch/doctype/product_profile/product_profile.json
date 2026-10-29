@@ -1,0 +1,275 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-10-22 09:02:09.968982",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "product_information",
+  "product_code",
+  "product_name",
+  "brand",
+  "category",
+  "price",
+  "product_url",
+  "image_url",
+  "skin_suitability_section",
+  "suitable_oily",
+  "suitable_dry",
+  "suitable_combination",
+  "suitable_normal",
+  "suitable_all_skin",
+  "suitable_sensitive",
+  "skin_concerns_section",
+  "concern_oil_control",
+  "concern_acne",
+  "concern_post_acne",
+  "concern_dehydration",
+  "concern_barrier",
+  "concern_dullness",
+  "concern_aging",
+  "ingredients_section",
+  "key_ingredients",
+  "ingredient_concern_tags",
+  "safety_data_section",
+  "contains_fragrance",
+  "contains_alcohol_denat",
+  "contains_essential_oil",
+  "source_url",
+  "data_as_of",
+  "data_completeness",
+  "status"
+ ],
+ "fields": [
+  {
+   "fieldname": "product_information",
+   "fieldtype": "Section Break",
+   "label": "Product Information"
+  },
+  {
+   "fieldname": "product_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Product Code",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "product_name",
+   "fieldtype": "Data",
+   "label": "Product Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "brand",
+   "fieldtype": "Data",
+   "label": "Brand",
+   "reqd": 1
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "label": "Category",
+   "options": "CLEANSER\nTONER\nSERUM\nMOISTURIZER\nSUNSCREEN",
+   "reqd": 1
+  },
+  {
+   "fieldname": "price",
+   "fieldtype": "Currency",
+   "label": "Price",
+   "reqd": 1
+  },
+  {
+   "fieldname": "product_url",
+   "fieldtype": "Data",
+   "label": "Product URL",
+   "options": "URL"
+  },
+  {
+   "fieldname": "image_url",
+   "fieldtype": "Data",
+   "label": "Image URL",
+   "length": 500,
+   "options": "URL"
+  },
+  {
+   "fieldname": "skin_suitability_section",
+   "fieldtype": "Section Break",
+   "label": "Skin Suitability"
+  },
+  {
+   "default": "0",
+   "fieldname": "suitable_oily",
+   "fieldtype": "Check",
+   "label": "Suitable Oily"
+  },
+  {
+   "default": "0",
+   "fieldname": "suitable_dry",
+   "fieldtype": "Check",
+   "label": "Suitable Dry"
+  },
+  {
+   "default": "0",
+   "fieldname": "suitable_combination",
+   "fieldtype": "Check",
+   "label": "Suitable Combination"
+  },
+  {
+   "default": "0",
+   "fieldname": "suitable_normal",
+   "fieldtype": "Check",
+   "label": "Suitable Normal"
+  },
+  {
+   "default": "0",
+   "fieldname": "suitable_all_skin",
+   "fieldtype": "Check",
+   "label": "Suitable All Skin"
+  },
+  {
+   "default": "0",
+   "fieldname": "suitable_sensitive",
+   "fieldtype": "Check",
+   "label": "Suitable Sensitive"
+  },
+  {
+   "fieldname": "skin_concerns_section",
+   "fieldtype": "Section Break",
+   "label": "Skin Concerns"
+  },
+  {
+   "default": "0",
+   "fieldname": "concern_oil_control",
+   "fieldtype": "Check",
+   "label": "Concern Oil Control"
+  },
+  {
+   "default": "0",
+   "fieldname": "concern_acne",
+   "fieldtype": "Check",
+   "label": "Concern Acne"
+  },
+  {
+   "default": "0",
+   "fieldname": "concern_post_acne",
+   "fieldtype": "Check",
+   "label": "Concern Post Acne"
+  },
+  {
+   "default": "0",
+   "fieldname": "concern_dehydration",
+   "fieldtype": "Check",
+   "label": "Concern Dehydration"
+  },
+  {
+   "default": "0",
+   "fieldname": "concern_barrier",
+   "fieldtype": "Check",
+   "label": "Concern Barrier"
+  },
+  {
+   "default": "0",
+   "fieldname": "concern_dullness",
+   "fieldtype": "Check",
+   "label": "Concern Dullness"
+  },
+  {
+   "default": "0",
+   "fieldname": "concern_aging",
+   "fieldtype": "Check",
+   "label": "Concern Aging"
+  },
+  {
+   "fieldname": "ingredients_section",
+   "fieldtype": "Section Break",
+   "label": "Ingredients"
+  },
+  {
+   "fieldname": "key_ingredients",
+   "fieldtype": "Small Text",
+   "label": "Key Ingredients"
+  },
+  {
+   "fieldname": "ingredient_concern_tags",
+   "fieldtype": "Small Text",
+   "label": "Ingredient Concern Tags"
+  },
+  {
+   "fieldname": "safety_data_section",
+   "fieldtype": "Section Break",
+   "label": "Avoid Tags and Data Quality"
+  },
+  {
+   "default": "Unknown",
+   "fieldname": "contains_fragrance",
+   "fieldtype": "Select",
+   "label": "Contains Fragrance",
+   "options": "Yes\nNo\nUnknown"
+  },
+  {
+   "default": "Unknown",
+   "fieldname": "contains_alcohol_denat",
+   "fieldtype": "Select",
+   "label": "Contains Alcohol Denat",
+   "options": "Yes\nNo\nUnknown"
+  },
+  {
+   "default": "Unknown",
+   "fieldname": "contains_essential_oil",
+   "fieldtype": "Select",
+   "label": "Contains Essential Oil",
+   "options": "Yes\nNo\nUnknown"
+  },
+  {
+   "fieldname": "source_url",
+   "fieldtype": "Data",
+   "label": "Source URL",
+   "options": "URL"
+  },
+  {
+   "fieldname": "data_as_of",
+   "fieldtype": "Date",
+   "label": "Data As Of"
+  },
+  {
+   "fieldname": "data_completeness",
+   "fieldtype": "Percent",
+   "label": "Data Completeness"
+  },
+  {
+   "default": "Inactive",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Active\nInactive"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-10-22 09:30:36.751882",
+ "modified_by": "Administrator",
+ "module": "BeautyMatch",
+ "name": "Product Profile",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

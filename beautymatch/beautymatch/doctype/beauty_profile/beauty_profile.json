@@ -1,0 +1,185 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "autoname": "hash",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "crm_lead",
+    "crm_contact",
+    "full_name",
+    "skin_type",
+    "concern_oil_control",
+    "concern_acne",
+    "concern_post_acne",
+    "concern_dehydration",
+    "concern_barrier",
+    "concern_dullness",
+    "concern_aging",
+    "sensitivity",
+    "requested_category",
+    "max_budget",
+    "avoid_fragrance",
+    "avoid_alcohol_denat",
+    "avoid_essential_oil",
+    "preferred_brand",
+    "consent",
+    "status",
+    "last_assessment"
+  ],
+  "fields": [
+    {
+      "fieldname": "crm_lead",
+      "fieldtype": "Link",
+      "label": "CRM Lead",
+      "options": "CRM Lead",
+      "reqd": 1,
+      "unique": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "crm_contact",
+      "fieldtype": "Link",
+      "label": "CRM Contact",
+      "options": "CRM Contacts"
+    },
+    {
+      "fieldname": "full_name",
+      "fieldtype": "Data",
+      "label": "Full Name",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "skin_type",
+      "fieldtype": "Select",
+      "label": "Skin Type",
+      "options": "\nOILY\nDRY\nCOMBINATION\nNORMAL",
+      "reqd": 1
+    },
+    {
+      "fieldname": "concern_oil_control",
+      "fieldtype": "Check",
+      "label": "Oil Control",
+      "default": "0"
+    },
+    {
+      "fieldname": "concern_acne",
+      "fieldtype": "Check",
+      "label": "Acne Prone",
+      "default": "0"
+    },
+    {
+      "fieldname": "concern_post_acne",
+      "fieldtype": "Check",
+      "label": "Post Acne Marks",
+      "default": "0"
+    },
+    {
+      "fieldname": "concern_dehydration",
+      "fieldtype": "Check",
+      "label": "Dehydration",
+      "default": "0"
+    },
+    {
+      "fieldname": "concern_barrier",
+      "fieldtype": "Check",
+      "label": "Soothing Barrier",
+      "default": "0"
+    },
+    {
+      "fieldname": "concern_dullness",
+      "fieldtype": "Check",
+      "label": "Dullness",
+      "default": "0"
+    },
+    {
+      "fieldname": "concern_aging",
+      "fieldtype": "Check",
+      "label": "Aging",
+      "default": "0"
+    },
+    {
+      "fieldname": "sensitivity",
+      "fieldtype": "Select",
+      "label": "Sensitivity",
+      "options": "Sensitive\nNot specifically sensitive",
+      "reqd": 1
+    },
+    {
+      "fieldname": "requested_category",
+      "fieldtype": "Select",
+      "label": "Requested Category",
+      "options": "\nCLEANSER\nTONER\nSERUM\nMOISTURIZER\nSUNSCREEN",
+      "reqd": 1
+    },
+    {
+      "fieldname": "max_budget",
+      "fieldtype": "Currency",
+      "label": "Maximum Budget",
+      "reqd": 1
+    },
+    {
+      "fieldname": "avoid_fragrance",
+      "fieldtype": "Check",
+      "label": "Avoid Fragrance",
+      "default": "0"
+    },
+    {
+      "fieldname": "avoid_alcohol_denat",
+      "fieldtype": "Check",
+      "label": "Avoid Alcohol Denat",
+      "default": "0"
+    },
+    {
+      "fieldname": "avoid_essential_oil",
+      "fieldtype": "Check",
+      "label": "Avoid Essential Oil",
+      "default": "0"
+    },
+    {
+      "fieldname": "preferred_brand",
+      "fieldtype": "Data",
+      "label": "Preferred Brand"
+    },
+    {
+      "fieldname": "consent",
+      "fieldtype": "Check",
+      "label": "Consent to Store Profile",
+      "default": "0"
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "Status",
+      "options": "Draft\nActive\nArchived",
+      "default": "Draft",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "last_assessment",
+      "fieldtype": "Datetime",
+      "label": "Last Assessment",
+      "read_only": 1
+    }
+  ],
+  "module": "BeautyMatch",
+  "name": "Beauty Profile",
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "report": 1,
+      "export": 1,
+      "print": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "links": []
+}
