@@ -1,0 +1,128 @@
+{
+  "offline_only": true,
+  "not_crm_ids": true,
+  "cases": [
+    {
+      "case": "0_results",
+      "source": "workbook REQUEST_SCENARIOS BM-REQ-001",
+      "profile_source": "BM-CUS-001",
+      "changes": {},
+      "number_of_eligible_products": 1,
+      "results": []
+    },
+    {
+      "case": "1_results",
+      "source": "workbook REQUEST_SCENARIOS BM-REQ-011",
+      "profile_source": "BM-CUS-011",
+      "changes": {},
+      "number_of_eligible_products": 1,
+      "results": [
+        {
+          "rank": 1,
+          "product": "OFFLINE-ONLY-HASAKI-CLN-007",
+          "skin_score": 24.0,
+          "concern_score": 15.0,
+          "ingredient_score": 10.0,
+          "sensitivity_score": 10.0,
+          "budget_score": 3.0,
+          "brand_score": 0.0,
+          "final_match_score": 65.26,
+          "concern_coverage": 50.0,
+          "why_recommended": "Có xác nhận phù hợp mọi loại da; Có thông tin hỗ trợ thiếu ẩm; Có tag thành phần liên quan đến nhu cầu đã chọn; Trong ngân sách.",
+          "warning_partial_match": "Chưa xác nhận đủ mọi nhu cầu đã chọn; Bằng chứng thành phần chưa bao phủ đủ nhu cầu."
+        }
+      ]
+    },
+    {
+      "case": "2_results",
+      "source": "controlled variation of workbook CUSTOMER_PROFILES BM-CUS-003",
+      "profile_source": "BM-CUS-003",
+      "changes": {
+        "requested_category": "CLEANSER",
+        "max_budget": 500000
+      },
+      "number_of_eligible_products": 3,
+      "results": [
+        {
+          "rank": 1,
+          "product": "OFFLINE-ONLY-HASAKI-CLN-008",
+          "skin_score": 30.0,
+          "concern_score": 20.0,
+          "ingredient_score": 13.33,
+          "sensitivity_score": 10.0,
+          "budget_score": 3.0,
+          "brand_score": 0.0,
+          "final_match_score": 80.35,
+          "concern_coverage": 66.67,
+          "why_recommended": "Phù hợp loại da đã chọn; Có thông tin hỗ trợ kiểm soát dầu, da dễ nổi mụn; Có tag thành phần liên quan đến nhu cầu đã chọn; Trong ngân sách.",
+          "warning_partial_match": "Chưa xác nhận đủ mọi nhu cầu đã chọn; Bằng chứng thành phần chưa bao phủ đủ nhu cầu."
+        },
+        {
+          "rank": 2,
+          "product": "OFFLINE-ONLY-HASAKI-CLN-004",
+          "skin_score": 30.0,
+          "concern_score": 20.0,
+          "ingredient_score": 6.67,
+          "sensitivity_score": 10.0,
+          "budget_score": 5.0,
+          "brand_score": 0.0,
+          "final_match_score": 75.44,
+          "concern_coverage": 66.67,
+          "why_recommended": "Phù hợp loại da đã chọn; Có thông tin hỗ trợ kiểm soát dầu, da dễ nổi mụn; Có tag thành phần liên quan đến nhu cầu đã chọn; Trong ngân sách.",
+          "warning_partial_match": "Chưa xác nhận đủ mọi nhu cầu đã chọn; Bằng chứng thành phần chưa bao phủ đủ nhu cầu."
+        }
+      ]
+    },
+    {
+      "case": "3_results",
+      "source": "workbook REQUEST_SCENARIOS BM-REQ-003",
+      "profile_source": "BM-CUS-003",
+      "changes": {},
+      "number_of_eligible_products": 3,
+      "results": [
+        {
+          "rank": 1,
+          "product": "OFFLINE-ONLY-HASAKI-SER-013",
+          "skin_score": 30.0,
+          "concern_score": 20.0,
+          "ingredient_score": 13.33,
+          "sensitivity_score": 10.0,
+          "budget_score": 5.0,
+          "brand_score": 0.0,
+          "final_match_score": 82.46,
+          "concern_coverage": 66.67,
+          "why_recommended": "Phù hợp loại da đã chọn; Có thông tin hỗ trợ kiểm soát dầu, da dễ nổi mụn; Có tag thành phần liên quan đến nhu cầu đã chọn; Trong ngân sách.",
+          "warning_partial_match": "Chưa xác nhận đủ mọi nhu cầu đã chọn; Bằng chứng thành phần chưa bao phủ đủ nhu cầu."
+        },
+        {
+          "rank": 2,
+          "product": "OFFLINE-ONLY-HASAKI-SER-008",
+          "skin_score": 30.0,
+          "concern_score": 20.0,
+          "ingredient_score": 13.33,
+          "sensitivity_score": 10.0,
+          "budget_score": 3.0,
+          "brand_score": 0.0,
+          "final_match_score": 80.35,
+          "concern_coverage": 66.67,
+          "why_recommended": "Phù hợp loại da đã chọn; Có thông tin hỗ trợ kiểm soát dầu, da dễ nổi mụn; Có tag thành phần liên quan đến nhu cầu đã chọn; Trong ngân sách.",
+          "warning_partial_match": "Chưa xác nhận đủ mọi nhu cầu đã chọn; Bằng chứng thành phần chưa bao phủ đủ nhu cầu."
+        },
+        {
+          "rank": 3,
+          "product": "OFFLINE-ONLY-HASAKI-SER-001",
+          "skin_score": 24.0,
+          "concern_score": 20.0,
+          "ingredient_score": 13.33,
+          "sensitivity_score": 10.0,
+          "budget_score": 5.0,
+          "brand_score": 0.0,
+          "final_match_score": 76.14,
+          "concern_coverage": 66.67,
+          "why_recommended": "Có xác nhận phù hợp mọi loại da; Có thông tin hỗ trợ kiểm soát dầu, da dễ nổi mụn; Có tag thành phần liên quan đến nhu cầu đã chọn; Trong ngân sách.",
+          "warning_partial_match": "Chưa xác nhận đủ mọi nhu cầu đã chọn; Bằng chứng thành phần chưa bao phủ đủ nhu cầu."
+        }
+      ]
+    }
+  ]
+}

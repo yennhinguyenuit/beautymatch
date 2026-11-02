@@ -1,0 +1,125 @@
+{
+  "type": "UNIT_TEST_FIXTURES_ONLY_NOT_REAL_CRM",
+  "description": "0/1/2/3 synthetic eligible products; each in same category and matches profile",
+  "cases": [
+    {
+      "case": "0_results",
+      "number_of_fixture_products": 0,
+      "response": {
+        "number_of_eligible_products": 0,
+        "results": []
+      }
+    },
+    {
+      "case": "1_results",
+      "number_of_fixture_products": 1,
+      "response": {
+        "number_of_eligible_products": 1,
+        "results": [
+          {
+            "rank": 1,
+            "product": "TEST-PRODUCT-FIX-00",
+            "skin_score": 30.0,
+            "concern_score": 30.0,
+            "ingredient_score": 20.0,
+            "sensitivity_score": 10.0,
+            "budget_score": 5.0,
+            "brand_score": 0.0,
+            "final_match_score": 100.0,
+            "concern_coverage": 100.0,
+            "why_recommended": "Phù hợp loại da đã chọn; Có thông tin hỗ trợ thiếu ẩm; Có tag thành phần liên quan đến nhu cầu đã chọn; Trong ngân sách.",
+            "warning_partial_match": ""
+          }
+        ]
+      }
+    },
+    {
+      "case": "2_results",
+      "number_of_fixture_products": 2,
+      "response": {
+        "number_of_eligible_products": 2,
+        "results": [
+          {
+            "rank": 1,
+            "product": "TEST-PRODUCT-FIX-00",
+            "skin_score": 30.0,
+            "concern_score": 30.0,
+            "ingredient_score": 20.0,
+            "sensitivity_score": 10.0,
+            "budget_score": 5.0,
+            "brand_score": 0.0,
+            "final_match_score": 100.0,
+            "concern_coverage": 100.0,
+            "why_recommended": "Phù hợp loại da đã chọn; Có thông tin hỗ trợ thiếu ẩm; Có tag thành phần liên quan đến nhu cầu đã chọn; Trong ngân sách.",
+            "warning_partial_match": ""
+          },
+          {
+            "rank": 2,
+            "product": "TEST-PRODUCT-FIX-01",
+            "skin_score": 30.0,
+            "concern_score": 30.0,
+            "ingredient_score": 20.0,
+            "sensitivity_score": 10.0,
+            "budget_score": 5.0,
+            "brand_score": 0.0,
+            "final_match_score": 100.0,
+            "concern_coverage": 100.0,
+            "why_recommended": "Phù hợp loại da đã chọn; Có thông tin hỗ trợ thiếu ẩm; Có tag thành phần liên quan đến nhu cầu đã chọn; Trong ngân sách.",
+            "warning_partial_match": ""
+          }
+        ]
+      }
+    },
+    {
+      "case": "3_results",
+      "number_of_fixture_products": 3,
+      "response": {
+        "number_of_eligible_products": 3,
+        "results": [
+          {
+            "rank": 1,
+            "product": "TEST-PRODUCT-FIX-00",
+            "skin_score": 30.0,
+            "concern_score": 30.0,
+            "ingredient_score": 20.0,
+            "sensitivity_score": 10.0,
+            "budget_score": 5.0,
+            "brand_score": 0.0,
+            "final_match_score": 100.0,
+            "concern_coverage": 100.0,
+            "why_recommended": "Phù hợp loại da đã chọn; Có thông tin hỗ trợ thiếu ẩm; Có tag thành phần liên quan đến nhu cầu đã chọn; Trong ngân sách.",
+            "warning_partial_match": ""
+          },
+          {
+            "rank": 2,
+            "product": "TEST-PRODUCT-FIX-01",
+            "skin_score": 30.0,
+            "concern_score": 30.0,
+            "ingredient_score": 20.0,
+            "sensitivity_score": 10.0,
+            "budget_score": 5.0,
+            "brand_score": 0.0,
+            "final_match_score": 100.0,
+            "concern_coverage": 100.0,
+            "why_recommended": "Phù hợp loại da đã chọn; Có thông tin hỗ trợ thiếu ẩm; Có tag thành phần liên quan đến nhu cầu đã chọn; Trong ngân sách.",
+            "warning_partial_match": ""
+          },
+          {
+            "rank": 3,
+            "product": "TEST-PRODUCT-FIX-02",
+            "skin_score": 30.0,
+            "concern_score": 30.0,
+            "ingredient_score": 20.0,
+            "sensitivity_score": 10.0,
+            "budget_score": 5.0,
+            "brand_score": 0.0,
+            "final_match_score": 100.0,
+            "concern_coverage": 100.0,
+            "why_recommended": "Phù hợp loại da đã chọn; Có thông tin hỗ trợ thiếu ẩm; Có tag thành phần liên quan đến nhu cầu đã chọn; Trong ngân sách.",
+            "warning_partial_match": ""
+          }
+        ]
+      }
+    }
+  ]
+}
