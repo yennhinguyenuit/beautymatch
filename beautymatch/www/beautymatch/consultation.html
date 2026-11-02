@@ -1,0 +1,176 @@
+{% extends "templates/web.html" %}
+{% block title %}Tư vấn chăm sóc da | BeautyMatch{% endblock %}
+{% block page_content %}
+<style>
+  .bm-page, .bm-page * { box-sizing: border-box; }
+  .bm-page { --bm-green:#176B5B; --bm-ink:#1F2937; --bm-muted:#65746d; --bm-line:#dce7e1; font-family: inherit; color:var(--bm-ink); padding:30px 0 65px; }
+  .bm-wrap { max-width:900px; margin:0 auto; padding:0 15px; }
+  .bm-head { text-align:center; margin-bottom:27px; }
+  .bm-eyebrow { font-size:12px; font-weight:800; letter-spacing:2px; color:var(--bm-green); margin:0 0 10px; }
+  .bm-head h1 { font-size:clamp(27px,4vw,38px); line-height:1.18; font-weight:800; color:var(--bm-ink); margin:0 0 11px; }
+  .bm-head p { color:var(--bm-muted); font-size:15px; margin:0 auto; max-width:610px; line-height:1.7; }
+  .bm-layout { display:grid; gap:18px; }
+  .bm-section { background:#fff; border:1px solid var(--bm-line); border-radius:16px; padding:24px 27px; box-shadow:0 8px 25px rgba(22,90,68,.045); }
+  .bm-section-title { display:flex; align-items:center; gap:12px; margin-bottom:18px; }
+  .bm-num { width:32px; height:32px; border-radius:50%; display:grid; place-items:center; font-size:14px; background:#e3f2eb; color:var(--bm-green); font-weight:800; flex-shrink:0; }
+  .bm-section h2 { font-size:19px; margin:0; color:var(--bm-ink); font-weight:750; }
+  .bm-desc { margin:-5px 0 14px 44px; color:var(--bm-muted); font-size:13px; }
+  .bm-grid { display:grid; grid-template-columns:1fr 1fr; gap:15px 18px; }
+  .bm-field { display:flex; flex-direction:column; gap:7px; min-width:0; }
+  .bm-field-full { grid-column:1/-1; }
+  .bm-field label, .bm-label { font-size:13px; font-weight:700; color:#33443e; }
+  .bm-required { color:#bf4b4b; }
+  .bm-input, .bm-select { width:100%; border:1px solid #ccdcd4; border-radius:9px; background:white; color:#26352e; min-height:43px; padding:10px 12px; font:inherit; font-size:14px; transition:box-shadow .15s,border-color .15s; }
+  .bm-input:focus,.bm-select:focus { outline:0; border-color:var(--bm-green); box-shadow:0 0 0 3px #ddefe8; }
+  .bm-hint { margin:0; font-size:12px; color:var(--bm-muted); line-height:1.5; }
+  .bm-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .bm-option { display:flex; align-items:center; gap:9px; border:1px solid #d7e4dc; background:#fff; padding:11px 12px; border-radius:9px; cursor:pointer; font-size:13px; font-weight:500; min-height:45px; }
+  .bm-option:has(input:checked) { background:#ebf7f0; border-color:#5a9b7e; }
+  .bm-option input { accent-color:var(--bm-green); width:16px; height:16px; margin:0; flex-shrink:0; }
+  .bm-separator { margin-top:18px; }
+  .bm-consent { display:flex; gap:11px; align-items:flex-start; padding:14px 15px; border-radius:10px; background:#f3f8f5; border:1px solid #d6e8dc; font-size:13px; line-height:1.6; cursor:pointer; }
+  .bm-consent input { margin-top:4px; width:17px; height:17px; accent-color:var(--bm-green); flex-shrink:0; }
+  .bm-actions { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+  .bm-submit { padding:13px 24px; min-height:48px; border:0; border-radius:10px; background:var(--bm-green); color:#fff; font-size:15px; font-weight:750; cursor:pointer; }
+  .bm-submit:hover { background:#125849; }
+  .bm-submit:disabled { opacity:.6; cursor:not-allowed; }
+  .bm-alert { padding:13px 15px; background:#fff4f1; border:1px solid #ecc7bc; color:#993e2f; border-radius:9px; font-size:13px; line-height:1.5; }
+  .bm-alert[hidden] { display:none; }
+  .bm-footer-note { color:var(--bm-muted); font-size:12px; line-height:1.5; max-width:430px; }
+  @media(max-width:650px) { .bm-page{padding-top:14px} .bm-section{padding:18px 15px} .bm-grid,.bm-options{grid-template-columns:1fr} .bm-desc{margin-left:0} .bm-actions{align-items:stretch} .bm-submit{width:100%} }
+</style>
+<div class="bm-page"><div class="bm-wrap">
+  <header class="bm-head"><div class="bm-eyebrow">BEAUTYMATCH • SKINCARE</div><h1>Hiểu làn da, chọn đúng sản phẩm</h1><p>Chia sẻ một vài thông tin về làn da để đội ngũ tư vấn đề xuất những sản phẩm phù hợp với nhu cầu và ngân sách của bạn.</p></header>
+  <form id="bm-consultation-form" class="bm-layout" novalidate>
+    <section class="bm-section" aria-labelledby="bm-heading-1"><div class="bm-section-title"><span class="bm-num">1</span><h2 id="bm-heading-1">Thông tin liên hệ</h2></div><div class="bm-grid">
+      <div class="bm-field bm-field-full"><label for="bm-full-name">Họ và tên <span class="bm-required">*</span></label><input class="bm-input" id="bm-full-name" name="full_name" type="text" maxlength="140" autocomplete="name" required placeholder="Ví dụ: Nguyễn Thị An"></div>
+      <div class="bm-field"><label for="bm-email">Email</label><input class="bm-input" id="bm-email" name="email" type="email" maxlength="140" autocomplete="email" placeholder="ten@example.com"></div>
+      <div class="bm-field"><label for="bm-phone">Số điện thoại</label><input class="bm-input" id="bm-phone" name="phone" type="tel" maxlength="24" autocomplete="tel" placeholder="0901234567"></div>
+      <p class="bm-hint bm-field-full">Vui lòng nhập ít nhất một trong hai thông tin: email hoặc số điện thoại.</p>
+    </div></section>
+    <section class="bm-section" aria-labelledby="bm-heading-2"><div class="bm-section-title"><span class="bm-num">2</span><h2 id="bm-heading-2">Tình trạng làn da</h2></div><div class="bm-grid">
+      <div class="bm-field"><label for="bm-skin">Loại da <span class="bm-required">*</span></label><select class="bm-select" id="bm-skin" name="skin_type" required><option value="">Chọn loại da</option><option value="OILY">Da dầu</option><option value="DRY">Da khô</option><option value="COMBINATION">Da hỗn hợp</option><option value="NORMAL">Da thường</option></select></div>
+      <div class="bm-field"><label for="bm-sensitivity">Độ nhạy cảm <span class="bm-required">*</span></label><select class="bm-select" id="bm-sensitivity" name="sensitivity" required><option value="">Chọn độ nhạy cảm</option><option value="Sensitive">Da nhạy cảm</option><option value="Not specifically sensitive">Không đặc biệt nhạy cảm</option></select></div>
+      <div class="bm-field bm-field-full"><span class="bm-label">Vấn đề da đang quan tâm <span class="bm-required">*</span></span><p class="bm-hint">Chọn từ 1 đến 3 vấn đề phù hợp nhất.</p><div class="bm-options" id="bm-concerns">
+        <label class="bm-option"><input type="checkbox" name="concern_oil_control" value="1">Da tiết nhiều dầu</label>
+        <label class="bm-option"><input type="checkbox" name="concern_acne" value="1">Mụn</label>
+        <label class="bm-option"><input type="checkbox" name="concern_post_acne" value="1">Thâm sau mụn</label>
+        <label class="bm-option"><input type="checkbox" name="concern_dehydration" value="1">Da thiếu nước</label>
+        <label class="bm-option"><input type="checkbox" name="concern_barrier" value="1">Hàng rào bảo vệ da yếu</label>
+        <label class="bm-option"><input type="checkbox" name="concern_dullness" value="1">Da xỉn màu</label>
+        <label class="bm-option"><input type="checkbox" name="concern_aging" value="1">Dấu hiệu lão hóa</label>
+      </div></div>
+    </div></section>
+    <section class="bm-section" aria-labelledby="bm-heading-3"><div class="bm-section-title"><span class="bm-num">3</span><h2 id="bm-heading-3">Nhu cầu sản phẩm</h2></div><div class="bm-grid">
+      <div class="bm-field"><label for="bm-category">Loại sản phẩm cần tư vấn <span class="bm-required">*</span></label><select class="bm-select" id="bm-category" name="requested_category" required><option value="">Chọn danh mục</option><option value="CLEANSER">Sữa rửa mặt</option><option value="TONER">Toner / nước cân bằng</option><option value="SERUM">Serum</option><option value="MOISTURIZER">Kem dưỡng ẩm</option><option value="SUNSCREEN">Kem chống nắng</option></select></div>
+      <div class="bm-field"><label for="bm-budget">Ngân sách tối đa (VNĐ) <span class="bm-required">*</span></label><input class="bm-input" type="number" id="bm-budget" name="max_budget" min="1" step="1000" placeholder="Ví dụ: 300000" required></div>
+      <div class="bm-field bm-field-full"><span class="bm-label">Thành phần muốn tránh (không bắt buộc)</span><p class="bm-hint">Chỉ chọn nếu bạn muốn tránh thành phần đó.</p><div class="bm-options">
+        <label class="bm-option"><input type="checkbox" name="avoid_fragrance" value="1">Hương liệu</label>
+        <label class="bm-option"><input type="checkbox" name="avoid_alcohol_denat" value="1">Alcohol Denat.</label>
+        <label class="bm-option"><input type="checkbox" name="avoid_essential_oil" value="1">Tinh dầu</label>
+      </div></div>
+      <div class="bm-field bm-field-full"><label for="bm-brand">Thương hiệu yêu thích (không bắt buộc)</label><input class="bm-input" id="bm-brand" name="preferred_brand" type="text" maxlength="140" placeholder="Ví dụ: La Roche-Posay"></div>
+    </div></section>
+    <section class="bm-section" aria-labelledby="bm-heading-4"><div class="bm-section-title"><span class="bm-num">4</span><h2 id="bm-heading-4">Xác nhận thông tin</h2></div>
+      <label class="bm-consent"><input type="checkbox" name="consent" id="bm-consent" value="1"><span>Tôi đồng ý cho BeautyMatch lưu thông tin đã cung cấp để phục vụ tư vấn sản phẩm và theo dõi lịch sử tư vấn. <span class="bm-required">*</span></span></label>
+      <div id="bm-form-error" class="bm-alert bm-separator" role="alert" aria-live="polite" hidden></div>
+      <div class="bm-actions bm-separator"><span class="bm-footer-note">Các gợi ý chỉ mang tính tham khảo chăm sóc da, không thay thế tư vấn chuyên môn y tế.</span><button type="submit" id="bm-submit" class="bm-submit">Xem gợi ý sản phẩm →</button></div>
+    </section>
+  </form>
+</div></div>
+<script>
+(function () {
+  'use strict';
+  var form = document.getElementById('bm-consultation-form');
+  if (!form) return;
+  var errorBox = document.getElementById('bm-form-error');
+  var submitButton = document.getElementById('bm-submit');
+  var busy = false;
+  var pending = null;
+  var concernFields = ['concern_oil_control','concern_acne','concern_post_acne','concern_dehydration','concern_barrier','concern_dullness','concern_aging'];
+  var avoidFields = ['avoid_fragrance','avoid_alcohol_denat','avoid_essential_oil'];
+  function field(name) { return form.elements.namedItem(name); }
+  function checked(name) { return field(name).checked ? 1 : 0; }
+  function showError(message) { errorBox.textContent = message; errorBox.hidden = false; errorBox.scrollIntoView({behavior:'smooth',block:'center'}); }
+  function clearError() { errorBox.textContent = ''; errorBox.hidden = true; }
+  function uuid() {
+    if (window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r = Math.floor(Math.random()*16);return (c === 'x' ? r : (r&3|8)).toString(16);});
+  }
+  function buildPayload(requestId) {
+    var data = {
+      full_name:field('full_name').value.trim(),
+      email:field('email').value.trim().toLowerCase(),
+      phone:field('phone').value.trim(),
+      skin_type:field('skin_type').value,
+      sensitivity:field('sensitivity').value,
+      requested_category:field('requested_category').value,
+      max_budget:Number(field('max_budget').value),
+      preferred_brand:field('preferred_brand').value.trim(),
+      consent:checked('consent'),
+      request_id:requestId
+    };
+    concernFields.forEach(function(name){data[name] = checked(name);});
+    avoidFields.forEach(function(name){data[name] = checked(name);});
+    return data;
+  }
+  function validate(data) {
+    if (!data.full_name) return 'Vui lòng nhập họ và tên.';
+    if (!data.email && !data.phone) return 'Vui lòng nhập email hoặc số điện thoại.';
+    if (data.email && !field('email').checkValidity()) return 'Địa chỉ email không hợp lệ.';
+    if (!data.skin_type) return 'Vui lòng chọn loại da.';
+    if (!data.sensitivity) return 'Vui lòng chọn độ nhạy cảm.';
+    var count = concernFields.reduce(function(sum,name){return sum + data[name];},0);
+    if (count < 1 || count > 3) return 'Vui lòng chọn từ 1 đến 3 vấn đề da.';
+    if (!data.requested_category) return 'Vui lòng chọn loại sản phẩm cần tư vấn.';
+    if (!Number.isFinite(data.max_budget) || data.max_budget <= 0) return 'Vui lòng nhập ngân sách lớn hơn 0.';
+    if (!data.consent) return 'Vui lòng đồng ý lưu thông tin để tiếp tục.';
+    return null;
+  }
+  function parseError(response) {
+    if (response && response._server_messages) {
+      try { var messages = JSON.parse(response._server_messages); if (messages.length) return JSON.parse(messages[0]).message || 'Không thể lưu thông tin.'; } catch (e) {}
+    }
+    if (response && response.message && response.message.code) return response.message.message || response.message.code;
+    return 'Không thể lưu thông tin. Vui lòng thử lại.';
+  }
+  function submitApi(payload) {
+    if (window.frappe && typeof window.frappe.call === 'function') {
+      return new Promise(function(resolve,reject){
+        window.frappe.call({
+          method:'beautymatch.api.profile.save_beauty_profile',
+          args:{payload:JSON.stringify(payload)},
+          type:'POST',
+          callback:function(r){ if (r && r.exc) reject(new Error(parseError(r))); else resolve(r && r.message); },
+          error:function(r){reject(new Error(parseError(r && (r.responseJSON || r))));}
+        });
+      });
+    }
+    return fetch('/api/method/beautymatch.api.profile.save_beauty_profile',{
+      method:'POST',credentials:'same-origin',
+      headers:{'Content-Type':'application/json','X-Frappe-CSRF-Token':(window.frappe && window.frappe.csrf_token) || window.csrf_token || ''},
+      body:JSON.stringify({payload:JSON.stringify(payload)})
+    }).then(function(response){return response.json().then(function(body){if(!response.ok||body.exc)throw new Error(parseError(body));return body.message;});});
+  }
+  form.addEventListener('input',function(){clearError(); pending = null;});
+  form.addEventListener('change',function(){clearError(); pending = null;});
+  form.addEventListener('submit',async function(event){
+    event.preventDefault(); if(busy) return; clearError();
+    if (!pending) {var id = uuid();pending = buildPayload(id);}
+    var message = validate(pending);
+    if (message) {pending = null;showError(message);return;}
+    busy=true;submitButton.disabled=true;submitButton.textContent='Đang lưu thông tin…';
+    try {
+      var result = await submitApi(pending);
+      if (!result || !result.crm_lead || !result.beauty_profile || !result.request_id || !result.profile_version) throw new Error('Máy chủ chưa trả đủ thông tin tư vấn.');
+      sessionStorage.setItem('beautymatch_pending_v1',JSON.stringify({
+        crm_lead:result.crm_lead, beauty_profile:result.beauty_profile,
+        request_id:result.request_id, profile_version:result.profile_version
+      }));
+      window.location.assign('/beautymatch/result');
+    } catch(error) {showError(error && error.message ? error.message : 'Không thể kết nối máy chủ.');}
+    finally {busy=false;submitButton.disabled=false;submitButton.textContent='Xem gợi ý sản phẩm →';}
+  });
+})();
+</script>
+{% endblock %}
