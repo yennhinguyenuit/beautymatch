@@ -1,0 +1,142 @@
+{
+ "actions": [],
+ "creation": "2026-10-27 16:24:11.961954",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "algorithm_configuration_section",
+  "algorithm_version",
+  "scoring_weights_section",
+  "skin_weight",
+  "concern_weight",
+  "ingredient_weight",
+  "sensitivity_weight",
+  "budget_weight",
+  "brand_weight",
+  "recommendation_limits_section",
+  "minimum_recommendation_score",
+  "number_of_results",
+  "crm_followup_defaults_section",
+  "default_follow_up_assignee",
+  "default_follow_up_due_days"
+ ],
+ "fields": [
+  {
+   "fieldname": "algorithm_configuration_section",
+   "fieldtype": "Section Break",
+   "label": "Algorithm Configuration"
+  },
+  {
+   "default": "v1.0",
+   "fieldname": "algorithm_version",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Algorithm Version",
+   "reqd": 1
+  },
+  {
+   "fieldname": "scoring_weights_section",
+   "fieldtype": "Section Break",
+   "label": "Scoring Weights"
+  },
+  {
+   "default": "30",
+   "fieldname": "skin_weight",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Skin Weight",
+   "reqd": 1
+  },
+  {
+   "default": "30",
+   "fieldname": "concern_weight",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Concern Weight",
+   "reqd": 1
+  },
+  {
+   "default": "20",
+   "fieldname": "ingredient_weight",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Ingredient Weight",
+   "reqd": 1
+  },
+  {
+   "default": "10",
+   "fieldname": "sensitivity_weight",
+   "fieldtype": "Int",
+   "label": "Sensitivity Weight",
+   "reqd": 1
+  },
+  {
+   "default": "5",
+   "fieldname": "budget_weight",
+   "fieldtype": "Int",
+   "label": "Budget Weight",
+   "reqd": 1
+  },
+  {
+   "default": "5",
+   "fieldname": "brand_weight",
+   "fieldtype": "Int",
+   "label": "Brand Weight",
+   "reqd": 1
+  },
+  {
+   "fieldname": "recommendation_limits_section",
+   "fieldtype": "Section Break",
+   "label": "Recommendation Limits"
+  },
+  {
+   "default": "60",
+   "fieldname": "minimum_recommendation_score",
+   "fieldtype": "Percent",
+   "label": "Minimum Recommendation Score",
+   "reqd": 1
+  },
+  {
+   "default": "3",
+   "fieldname": "number_of_results",
+   "fieldtype": "Int",
+   "label": "Number of Results",
+   "reqd": 1
+  },
+  {
+   "fieldname": "crm_followup_defaults_section",
+   "fieldtype": "Section Break",
+   "label": "CRM Follow-up Defaults"
+  },
+  {
+   "fieldname": "default_follow_up_assignee",
+   "fieldtype": "Link",
+   "label": "Default Follow-up Assignee",
+   "options": "User"
+  },
+  {
+   "default": "1",
+   "fieldname": "default_follow_up_due_days",
+   "fieldtype": "Int",
+   "label": "Default Follow-up Due Days",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-10-27 16:24:11.961954",
+ "modified_by": "Administrator",
+ "module": "BeautyMatch",
+ "name": "BeautyMatch Settings",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

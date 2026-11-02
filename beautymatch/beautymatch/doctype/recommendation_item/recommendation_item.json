@@ -1,0 +1,196 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-10-27 15:54:27.259771",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "product_information_section",
+  "rank",
+  "product",
+  "product_code_snapshot",
+  "product_name_snapshot",
+  "brand_snapshot",
+  "price_snapshot",
+  "match_scoring_section",
+  "final_match_score",
+  "skin_score",
+  "concern_score",
+  "ingredient_score",
+  "sensitivity_score",
+  "budget_score",
+  "brand_score",
+  "concern_coverage",
+  "recommendation_explanation_section",
+  "why_recommended",
+  "warning_partial_match",
+  "customer_feedback_section",
+  "customer_feedback",
+  "rejection_reason",
+  "feedback_date",
+  "follow_up_task"
+ ],
+ "fields": [
+  {
+   "fieldname": "product_information_section",
+   "fieldtype": "Section Break",
+   "label": "Product Information"
+  },
+  {
+   "fieldname": "rank",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Rank",
+   "reqd": 1
+  },
+  {
+   "fieldname": "product",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Product",
+   "options": "Product Profile",
+   "reqd": 1
+  },
+  {
+   "fieldname": "product_code_snapshot",
+   "fieldtype": "Data",
+   "label": "Product Code Snapshot",
+   "reqd": 1
+  },
+  {
+   "fieldname": "product_name_snapshot",
+   "fieldtype": "Data",
+   "label": "Product Name Snapshot",
+   "reqd": 1
+  },
+  {
+   "fieldname": "brand_snapshot",
+   "fieldtype": "Data",
+   "label": "Brand Snapshot",
+   "reqd": 1
+  },
+  {
+   "fieldname": "price_snapshot",
+   "fieldtype": "Currency",
+   "label": "Price Snapshot",
+   "reqd": 1
+  },
+  {
+   "fieldname": "match_scoring_section",
+   "fieldtype": "Section Break",
+   "label": "Match Scoring"
+  },
+  {
+   "fieldname": "final_match_score",
+   "fieldtype": "Percent",
+   "in_list_view": 1,
+   "label": "Final Match Score",
+   "reqd": 1
+  },
+  {
+   "fieldname": "skin_score",
+   "fieldtype": "Float",
+   "label": "Skin Score",
+   "reqd": 1
+  },
+  {
+   "fieldname": "concern_score",
+   "fieldtype": "Float",
+   "label": "Concern Score",
+   "reqd": 1
+  },
+  {
+   "fieldname": "ingredient_score",
+   "fieldtype": "Float",
+   "label": "Ingredient Score",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sensitivity_score",
+   "fieldtype": "Float",
+   "label": "Sensitivity Score",
+   "reqd": 1
+  },
+  {
+   "fieldname": "budget_score",
+   "fieldtype": "Float",
+   "label": "Budget Score",
+   "reqd": 1
+  },
+  {
+   "fieldname": "brand_score",
+   "fieldtype": "Float",
+   "label": "Brand Score",
+   "reqd": 1
+  },
+  {
+   "fieldname": "concern_coverage",
+   "fieldtype": "Percent",
+   "label": "Concern Coverage",
+   "reqd": 1
+  },
+  {
+   "fieldname": "recommendation_explanation_section",
+   "fieldtype": "Section Break",
+   "label": "Recommendation Explanation"
+  },
+  {
+   "fieldname": "why_recommended",
+   "fieldtype": "Small Text",
+   "label": "Why Recommended",
+   "reqd": 1
+  },
+  {
+   "fieldname": "warning_partial_match",
+   "fieldtype": "Small Text",
+   "label": "Warning Partial Match"
+  },
+  {
+   "fieldname": "customer_feedback_section",
+   "fieldtype": "Section Break",
+   "label": "Customer Feedback"
+  },
+  {
+   "default": "None",
+   "fieldname": "customer_feedback",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Customer Feedback",
+   "options": "None\nInterested\nNot Interested",
+   "reqd": 1
+  },
+  {
+   "fieldname": "rejection_reason",
+   "fieldtype": "Select",
+   "label": "Rejection Reason",
+   "options": "\nKh\u00f4ng th\u00edch th\u01b0\u01a1ng hi\u1ec7u\nKh\u00f4ng ph\u00f9 h\u1ee3p s\u1edf th\u00edch c\u00e1 nh\u00e2n\n\u0110\u00e3 t\u1eebng s\u1eed d\u1ee5ng\nMu\u1ed1n t\u00ecm l\u1ef1a ch\u1ecdn kh\u00e1c\nKh\u00e1c"
+  },
+  {
+   "fieldname": "feedback_date",
+   "fieldtype": "Datetime",
+   "label": "Feedback Date"
+  },
+  {
+   "fieldname": "follow_up_task",
+   "fieldtype": "Link",
+   "label": "Follow Up Task",
+   "options": "CRM Task"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-27 16:04:29.968270",
+ "modified_by": "Administrator",
+ "module": "BeautyMatch",
+ "name": "Recommendation Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
