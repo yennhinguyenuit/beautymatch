@@ -1,0 +1,41 @@
+fixture_customer_key,skin_type,concern_oil_control,concern_acne,concern_post_acne,concern_dehydration,concern_barrier,concern_dullness,concern_aging,sensitivity,requested_category,max_budget,avoid_fragrance,avoid_alcohol_denat,avoid_essential_oil,preferred_brand
+BM-CUS-001,OILY,0,1,0,0,0,0,0,Sensitive,CLEANSER,150000,1,1,1,
+BM-CUS-002,DRY,0,0,1,0,0,1,0,Not specifically sensitive,TONER,250000,0,0,0,
+BM-CUS-003,COMBINATION,1,1,0,0,0,0,1,Not specifically sensitive,SERUM,400000,0,0,0,
+BM-CUS-004,NORMAL,1,0,0,0,0,0,0,Sensitive,MOISTURIZER,600000,1,0,0,CeraVe
+BM-CUS-005,OILY,0,0,0,0,1,0,1,Sensitive,SUNSCREEN,900000,0,0,0,La Roche-Posay
+BM-CUS-006,DRY,1,0,1,0,0,0,1,Not specifically sensitive,CLEANSER,150000,0,0,1,Bioderma
+BM-CUS-007,COMBINATION,0,0,0,0,1,0,0,Not specifically sensitive,TONER,250000,1,0,0,Simple
+BM-CUS-008,NORMAL,1,0,0,0,1,0,0,Sensitive,SERUM,400000,0,1,0,Cetaphil
+BM-CUS-009,OILY,1,0,1,0,0,1,0,Sensitive,MOISTURIZER,600000,0,0,0,
+BM-CUS-010,DRY,0,0,0,0,1,0,0,Not specifically sensitive,SUNSCREEN,900000,1,0,0,
+BM-CUS-011,COMBINATION,0,0,0,1,0,1,0,Not specifically sensitive,CLEANSER,150000,0,0,1,
+BM-CUS-012,NORMAL,0,0,0,1,1,1,0,Sensitive,TONER,250000,0,0,0,CeraVe
+BM-CUS-013,OILY,0,0,1,0,0,0,0,Sensitive,SERUM,400000,1,0,0,La Roche-Posay
+BM-CUS-014,DRY,0,0,0,1,0,1,0,Not specifically sensitive,MOISTURIZER,600000,0,0,0,Bioderma
+BM-CUS-015,COMBINATION,1,0,0,0,0,1,1,Not specifically sensitive,SUNSCREEN,900000,0,1,0,Simple
+BM-CUS-016,NORMAL,0,0,0,0,1,0,0,Sensitive,CLEANSER,150000,1,0,1,Cetaphil
+BM-CUS-017,OILY,0,1,0,1,0,0,0,Sensitive,TONER,250000,0,0,0,
+BM-CUS-018,DRY,0,1,0,0,0,1,1,Not specifically sensitive,SERUM,400000,0,0,0,
+BM-CUS-019,COMBINATION,0,0,1,0,0,0,0,Not specifically sensitive,MOISTURIZER,600000,1,0,0,
+BM-CUS-020,NORMAL,0,0,1,0,0,1,0,Sensitive,SUNSCREEN,900000,0,0,0,CeraVe
+BM-CUS-021,OILY,1,1,0,0,0,1,0,Sensitive,CLEANSER,150000,0,0,1,La Roche-Posay
+BM-CUS-022,DRY,0,1,0,0,0,0,0,Not specifically sensitive,TONER,250000,1,1,0,Bioderma
+BM-CUS-023,COMBINATION,0,0,0,0,1,1,0,Not specifically sensitive,SERUM,400000,0,0,0,Simple
+BM-CUS-024,NORMAL,0,1,0,0,1,1,0,Sensitive,MOISTURIZER,600000,0,0,0,Cetaphil
+BM-CUS-025,OILY,0,0,0,0,0,1,0,Sensitive,SUNSCREEN,900000,1,0,0,
+BM-CUS-026,DRY,1,0,0,1,0,0,0,Not specifically sensitive,CLEANSER,150000,0,0,1,
+BM-CUS-027,COMBINATION,0,0,1,1,0,0,1,Not specifically sensitive,TONER,250000,0,0,0,
+BM-CUS-028,NORMAL,0,0,0,0,1,0,0,Sensitive,SERUM,400000,1,0,0,CeraVe
+BM-CUS-029,OILY,1,0,0,1,0,0,0,Sensitive,MOISTURIZER,600000,0,1,0,La Roche-Posay
+BM-CUS-030,DRY,0,0,1,0,0,1,1,Not specifically sensitive,SUNSCREEN,900000,0,0,0,Bioderma
+BM-CUS-031,COMBINATION,0,0,1,0,0,0,0,Not specifically sensitive,CLEANSER,150000,1,0,1,Simple
+BM-CUS-032,NORMAL,1,0,0,0,0,1,0,Sensitive,TONER,250000,0,0,0,Cetaphil
+BM-CUS-033,OILY,1,0,0,1,0,1,0,Sensitive,SERUM,400000,0,0,0,
+BM-CUS-034,DRY,0,0,0,1,0,0,0,Not specifically sensitive,MOISTURIZER,600000,1,0,0,
+BM-CUS-035,COMBINATION,0,0,1,0,0,1,0,Not specifically sensitive,SUNSCREEN,900000,0,0,0,
+BM-CUS-036,NORMAL,1,1,0,1,0,0,0,Sensitive,CLEANSER,150000,0,1,1,CeraVe
+BM-CUS-037,OILY,0,0,1,0,0,0,0,Sensitive,TONER,250000,1,0,0,La Roche-Posay
+BM-CUS-038,DRY,1,0,0,0,1,0,0,Not specifically sensitive,SERUM,400000,0,0,0,Bioderma
+BM-CUS-039,COMBINATION,1,1,0,0,0,0,1,Not specifically sensitive,MOISTURIZER,600000,0,0,0,Simple
+BM-CUS-040,NORMAL,0,1,0,0,0,0,0,Sensitive,SUNSCREEN,900000,1,0,0,Cetaphil
