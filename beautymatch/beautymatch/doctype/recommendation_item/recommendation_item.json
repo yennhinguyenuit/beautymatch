@@ -13,6 +13,8 @@
   "product_name_snapshot",
   "brand_snapshot",
   "price_snapshot",
+  "image_url_snapshot",
+  "product_url_snapshot",
   "match_scoring_section",
   "final_match_score",
   "skin_score",
@@ -75,6 +77,18 @@
    "fieldtype": "Currency",
    "label": "Price Snapshot",
    "reqd": 1
+  },
+  {
+   "fieldname": "image_url_snapshot",
+   "fieldtype": "Data",
+   "label": "Image URL Snapshot",
+   "read_only": 1
+  },
+  {
+   "fieldname": "product_url_snapshot",
+   "fieldtype": "Data",
+   "label": "Product URL Snapshot",
+   "read_only": 1
   },
   {
    "fieldname": "match_scoring_section",
@@ -164,7 +178,7 @@
    "fieldname": "rejection_reason",
    "fieldtype": "Select",
    "label": "Rejection Reason",
-   "options": "\nKh\u00f4ng th\u00edch th\u01b0\u01a1ng hi\u1ec7u\nKh\u00f4ng ph\u00f9 h\u1ee3p s\u1edf th\u00edch c\u00e1 nh\u00e2n\n\u0110\u00e3 t\u1eebng s\u1eed d\u1ee5ng\nMu\u1ed1n t\u00ecm l\u1ef1a ch\u1ecdn kh\u00e1c\nKh\u00e1c"
+   "options": "\nKhông thích thương hiệu\nKhông phù hợp sở thích cá nhân\nĐã từng sử dụng\nMuốn tìm lựa chọn khác\nKhác"
   },
   {
    "fieldname": "feedback_date",

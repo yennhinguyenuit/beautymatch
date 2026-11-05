@@ -87,3 +87,118 @@ def get_dashboard(start_date=None, end_date=None):
             ],
         },
     }
+
+
+@frappe.whitelist(methods=["GET"])
+def get_dashboard_data():
+    """TASK 4 dashboard, scoped to CRM Leads visible to the caller."""
+    import json
+
+    _check_consultation_role()
+
+    allowed_leads = frappe.get_list(
+        "CRM Lead", pluck="name", limit_page_length=0
+    )
+
+    kpis = {
+        "total_sessions": 0,
+        "leads_with_profile": 0,
+        "interest_rate": 0.0,
+        "average_top1_score": 0.0,
+    }
+    charts = {
+        "top_skin_concerns": [],
+        "top_interested_products": [],
+    }
+
+    if not allowed_leads:
+        return {"kpis": kpis, "charts": charts}
+
+    kpis["leads_with_profile"] = len(set(frappe.get_all(
+        "Beauty Profile",
+        filters={"crm_lead": ["in", allowed_leads]},
+        pluck="crm_lead",
+        limit_page_length=0,
+    )))
+
+    sessions = frappe.get_all(
+        "Recommendation Session",
+        filters={"crm_lead": ["in", allowed_leads]},
+        fields=["name", "profile_snapshot"],
+        limit_page_length=0,
+    )
+
+    kpis["total_sessions"] = len(sessions)
+    if not sessions:
+        return {"kpis": kpis, "charts": charts}
+
+    session_ids = [s.name for s in sessions]
+    items = frappe.get_all(
+        "Recommendation Item",
+        filters={
+            "parenttype": "Recommendation Session",
+            "parent": ["in", session_ids],
+        },
+        fields=[
+            "parent", "rank", "final_match_score",
+            "customer_feedback", "product_name_snapshot",
+        ],
+        limit_page_length=0,
+    )
+
+    interested_sessions = {
+        item.parent for item in items
+        if item.customer_feedback == "Interested"
+    }
+    kpis["interest_rate"] = round(
+        100 * len(interested_sessions) / len(sessions), 2
+    )
+
+    top1_scores = [
+        float(item.final_match_score)
+        for item in items
+        if int(item.rank or 0) == 1
+        and item.final_match_score is not None
+    ]
+    if top1_scores:
+        kpis["average_top1_score"] = round(
+            sum(top1_scores) / len(top1_scores), 2
+        )
+
+    concerns = Counter()
+    for session in sessions:
+        try:
+            snapshot = json.loads(session.profile_snapshot or "{}")
+        except (ValueError, TypeError):
+            continue
+        concern_labels = {
+            "concern_oil_control": "Oil Control",
+            "concern_acne": "Acne",
+            "concern_post_acne": "Post-acne",
+            "concern_dehydration": "Dehydration",
+            "concern_barrier": "Skin Barrier",
+            "concern_dullness": "Dullness",
+            "concern_aging": "Anti-aging",
+        }
+
+        for field, label in concern_labels.items():
+            if snapshot.get(field):
+                concerns[label] += 1
+
+    charts["top_skin_concerns"] = [
+        {"skin_concern": name, "count": count}
+        for name, count in concerns.most_common(10)
+    ]
+
+    products = Counter(
+        item.product_name_snapshot
+        for item in items
+        if item.customer_feedback == "Interested"
+        and item.product_name_snapshot
+    )
+    charts["top_interested_products"] = [
+        {"product_name": name, "count": count}
+        for name, count in products.most_common(10)
+    ]
+
+    return {"kpis": kpis, "charts": charts}
