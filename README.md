@@ -2,6 +2,16 @@
 
 Personalized Skincare Recommendation for Frappe CRM
 
+Frontend preview and API integration: [BeautyMatch frontend handoff](docs/FRONTEND_HANDOFF.md).
+
+```bash
+npm ci
+npm run dev
+```
+
+Open `http://127.0.0.1:4173/beautymatch/result?demo=1` or `/beautymatch/dashboard?demo=1`.
+The local preview uses explicitly labeled demo data; live CRM requires the Frappe site.
+
 ### Installation
 
 You can install this app using the [bench](https://github.com/frappe/bench) CLI:

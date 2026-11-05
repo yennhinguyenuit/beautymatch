@@ -7,3 +7,5 @@ node_modules
 __pycache__
 # Local consultation seed output
 /data/simulated/customer_seed_mapping.csv
+/test-results/
+/playwright-report/

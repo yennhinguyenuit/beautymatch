@@ -1,0 +1,16 @@
+{
+  "name": "beautymatch-frontend",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/preview_frontend.mjs",
+    "test": "node --test tests/frontend/*.test.mjs",
+    "test:e2e": "playwright test",
+    "format:check": "prettier --check \"beautymatch/public/js/*.mjs\" \"beautymatch/public/css/*.css\" \"tests/frontend/*.mjs\" \"tests/browser/*.mjs\" scripts/preview_frontend.mjs playwright.config.mjs",
+    "check": "node --check beautymatch/public/js/app.mjs && node --check beautymatch/public/js/api.mjs && node --check beautymatch/public/js/components.mjs && node --check beautymatch/public/js/demo-api.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.64.1",
+    "prettier": "^3.9.10"
+  }
+}

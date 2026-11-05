@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="vi">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="noindex, nofollow" />
+		<meta name="referrer" content="same-origin" />
+		<meta name="csrf-token" content="{{ csrf_token|e }}" />
+		<title>BeautyMatch · Chăm sóc da theo cách của bạn</title>
+		<link rel="icon" href="/assets/beautymatch/images/leaf.svg" type="image/svg+xml" />
+		<link rel="stylesheet" href="/assets/beautymatch/css/beautymatch.css" />
+		<script type="module" src="/assets/beautymatch/js/app.mjs"></script>
+	</head>
+	<body data-page="{{ bm_page }}">
+		<a class="skip-link" href="#main">Đến nội dung chính</a>
+		<div id="app">
+			<main class="initial-loading" aria-busy="true">Đang chuẩn bị BeautyMatch…</main>
+		</div>
+		<noscript>Vui lòng bật JavaScript để xem gợi ý và gửi phản hồi.</noscript>
+	</body>
+</html>
