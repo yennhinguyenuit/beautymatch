@@ -55,7 +55,7 @@ test("demo cards, photographs, 0/1/2/3 states, error and accessibility", async (
   expect(live).toEqual([]);
   expect(errors).toEqual([]);
 });
-test("feedback confirms only on success, accepts optional reasons and honors PENDING", async ({
+test("feedback confirms only on success, requires rejection reason and honors PENDING", async ({
   page,
 }) => {
   await page.goto("/beautymatch/result?demo=1");
@@ -69,6 +69,14 @@ test("feedback confirms only on success, accepts optional reasons and honors PEN
   await first
     .getByRole("button", { name: "Không quan tâm", exact: true })
     .click();
+  await page.getByRole("button", { name: "Gửi phản hồi" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  expect(
+    await page
+      .locator("#rejection-reason")
+      .evaluate((el) => el.validity.valueMissing),
+  ).toBe(true);
+  await page.selectOption("#rejection-reason", "Khác");
   await page.getByRole("button", { name: "Gửi phản hồi" }).click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await expect(first.locator(".feedback-status")).toContainText(
@@ -146,7 +154,7 @@ test("live RPC retries retain request_id, avoid duplicate generation and keep id
     await readFile("beautymatch/public/demo/products.json", "utf8"),
   );
   const session = {
-    recommendation_session: "PRIVATE-SESSION",
+    session_id: "PRIVATE-SESSION",
     crm_lead: pending.crm_lead,
     request_id: pending.request_id,
     status: "Generated",
@@ -155,7 +163,7 @@ test("live RPC retries retain request_id, avoid duplicate generation and keep id
     results: photos.map((p, i) => ({
       ...p,
       product: p.name,
-      recommendation_item: `ITEM-${i}`,
+      item_id: `ITEM-${i}`,
       rank: i + 1,
       final_match_score: 90 - i,
       why_recommended: "Giải thích từ backend",
@@ -207,8 +215,8 @@ test("live RPC retries retain request_id, avoid duplicate generation and keep id
         json: {
           message: {
             ...body,
-            customer_feedback: body.feedback,
-            status: "Follow-up Created",
+            customer_feedback: body.customer_feedback,
+            follow_up_status: "CREATED",
             follow_up_task: "TASK",
           },
         },
@@ -232,7 +240,7 @@ test("live RPC retries retain request_id, avoid duplicate generation and keep id
     .getByRole("button", { name: "Quan tâm", exact: true });
   await button.dblclick();
   await expect(page.locator(".feedback-status").first()).toContainText(
-    "Follow-up Created",
+    "CREATED",
   );
   expect(feedbackCalls).toBe(1);
   await page.reload();

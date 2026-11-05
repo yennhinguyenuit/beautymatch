@@ -1,3 +1,8 @@
+import {
+  catalogImage,
+  catalogCrop,
+} from "./catalog-images.mjs?v=botanical-20261105-v2";
+
 export const escape = (value = "") =>
   String(value ?? "").replace(
     /[&<>"']/g,
@@ -16,6 +21,17 @@ export const money = (value) =>
     : "Chưa có giá";
 export const number = (value) =>
   new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1 }).format(value);
+export function dateTime(value) {
+  if (!value) return "Chưa có ngày tư vấn";
+  // Live metadata supplies an ISO timestamp with the site's actual UTC offset.
+  const stamp = new Date(value);
+  if (Number.isNaN(stamp.getTime())) return "Ngày tư vấn chưa xác định";
+  return new Intl.DateTimeFormat("vi-VN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Ho_Chi_Minh",
+  }).format(stamp);
+}
 export const concerns = {
   concern_oil_control: "Kiểm soát dầu",
   concern_acne: "Mụn",
@@ -91,15 +107,17 @@ export function profileCard(profile, session) {
   return `<section class="profile-panel" aria-labelledby="profile-heading"><div class="profile-intro"><span class="profile-icon">${icon("leaf")}</span><div><span class="eyebrow">HIỂU LÀN DA CỦA BẠN</span><h2 id="profile-heading">Hồ sơ làn da</h2></div></div><div class="profile-facts"><div><span>Loại da</span><strong>${escape(skins[profile?.skin_type] || "Chưa có dữ liệu")}</strong></div><div><span>Mối quan tâm</span><strong>${escape(labels.join(" · ") || "Chưa có dữ liệu")}</strong></div><div><span>Ngân sách tối đa</span><strong>${money(session.max_budget)}</strong></div><div><span>Sản phẩm tìm kiếm</span><strong>${escape(categories[session.requested_category] || session.requested_category || "Chưa có dữ liệu")}</strong></div></div>${available ? `<div class="profile-foot">${icon("shield")} ${profile.sensitivity === "Sensitive" ? "Da nhạy cảm" : "Không đặc biệt nhạy cảm"}${profile.avoid_fragrance ? " · Tránh hương liệu" : ""}${profile.avoid_alcohol_denat ? " · Tránh Alcohol Denat." : ""}${profile.avoid_essential_oil ? " · Tránh tinh dầu" : ""}</div>` : ""}</section>`;
 }
 export function productCard(item, asset = {}, closed = false) {
-  const image = safeUrl(asset.image_url);
-  const link = safeUrl(asset.product_url);
+  const image = safeUrl(item.image_url ?? asset.image_url);
+  const link = safeUrl(item.product_url ?? asset.product_url);
   const score = Math.max(0, Math.min(100, Number(item.final_match_score) || 0));
-  return `<article class="product-card" data-item="${escape(item.recommendation_item)}"><div class="product-photo shade-${item.rank}"><span class="rank-badge">${Number(item.rank) === 1 ? `${icon("spark")} Phù hợp nhất` : `Lựa chọn 0${Number(item.rank) || 2}`}</span>${photoMarkup(image, item.product_name, asset.photo_crop)}</div><div class="product-body"><div class="product-brand">${escape(item.brand)}</div><h3>${escape(item.product_name)}</h3><div class="product-price">${money(item.price)}</div><div class="match"><div><span>Độ phù hợp với bạn</span><strong>${number(score)}<small>%</small></strong></div><progress max="100" value="${score}" aria-label="Độ phù hợp ${number(score)} phần trăm">${score}%</progress></div><div class="explanation"><h4>${icon("spark")} Vì sao dành cho bạn?</h4><p>${escape(item.why_recommended || "Máy chủ chưa cung cấp giải thích.")}</p></div>${item.warning_partial_match ? `<div class="partial-warning">${icon("info")}<p>${escape(item.warning_partial_match)}</p></div>` : ""}${link ? `<a class="detail-link" href="${escape(link)}" target="_blank" rel="noopener noreferrer">Chi tiết sản phẩm ${icon("external")}</a>` : `<button class="detail-link" data-action="detail" data-id="${escape(item.recommendation_item)}">Xem thông tin sản phẩm ${icon("arrow")}</button>`}<div class="card-bottom"><div class="feedback-status" data-feedback="${escape(item.recommendation_item)}" aria-live="polite">${item.customer_feedback && item.customer_feedback !== "None" ? `<span class="saved-feedback">${icon("check")} ${item.customer_feedback === "Interested" ? "Đã quan tâm" : "Đã ghi nhận: không quan tâm"}</span>` : ""}</div><div class="feedback-actions"><button class="button primary" data-action="interested" data-id="${escape(item.recommendation_item)}" ${closed ? "disabled" : ""}>${icon("heart")} Quan tâm</button><button class="button secondary" data-action="reject" data-id="${escape(item.recommendation_item)}" ${closed ? "disabled" : ""}>Không quan tâm</button></div>${closed ? '<p class="muted">Phiên tư vấn đã đóng.</p>' : ""}</div></div></article>`;
+  return `<article class="product-card" data-reveal data-item="${escape(item.item_id)}"><div class="product-photo shade-${item.rank}"><span class="rank-badge">${Number(item.rank) === 1 ? `${icon("spark")} Top 1 · Phù hợp nhất` : `Top ${Number(item.rank) || 2}`}</span>${photoMarkup(image, item.product_name, asset.photo_crop)}</div><div class="product-body"><div class="product-brand">${escape(item.brand)}</div><h3>${escape(item.product_name)}</h3><div class="product-price">${money(item.price)}</div><div class="match"><div><span>Độ phù hợp với bạn</span><strong>${number(score)}<small>%</small></strong></div><progress max="100" value="${score}" aria-label="Độ phù hợp ${number(score)} phần trăm">${score}%</progress></div><div class="explanation"><h4>${icon("spark")} Vì sao dành cho bạn?</h4><p>${escape(item.why_recommended || "Máy chủ chưa cung cấp giải thích.")}</p></div>${item.warning_partial_match ? `<div class="partial-warning">${icon("info")}<p>${escape(item.warning_partial_match)}</p></div>` : ""}${link ? `<a class="detail-link" href="${escape(link)}" target="_blank" rel="noopener noreferrer">Chi tiết sản phẩm ${icon("external")}</a>` : `<button class="detail-link" data-action="detail" data-id="${escape(item.item_id)}">Xem thông tin sản phẩm ${icon("arrow")}</button>`}<div class="card-bottom"><div class="feedback-status" data-feedback="${escape(item.item_id)}" aria-live="polite">${item.customer_feedback && item.customer_feedback !== "None" ? `<span class="saved-feedback">${icon("check")} ${item.customer_feedback === "Interested" ? "Đã quan tâm" : "Đã ghi nhận: không quan tâm"}</span>` : ""}</div><div class="feedback-actions"><button class="button primary" data-action="interested" data-id="${escape(item.item_id)}" ${closed ? "disabled" : ""}>${icon("heart")} Quan tâm</button><button class="button secondary" data-action="reject" data-id="${escape(item.item_id)}" ${closed ? "disabled" : ""}>Không quan tâm</button></div>${closed ? '<p class="muted">Phiên tư vấn đã đóng.</p>' : ""}</div></div></article>`;
 }
 export function photoMarkup(image, alt, crop) {
   if (!image)
     return `<div class="photo-placeholder">${icon("leaf")}<span>Chưa có ảnh sản phẩm</span></div>`;
-  const img = `<img src="${escape(image)}" alt="${escape(alt)}" loading="eager" referrerpolicy="no-referrer">`;
+  crop = crop || catalogCrop(image);
+  const fallback = `<div class="photo-placeholder" aria-hidden="true">${icon("leaf")}<span data-photo-label>Đang tải ảnh sản phẩm…</span></div>`;
+  const img = `${fallback}<img src="${escape(catalogImage(image))}" data-source-url="${escape(image)}" alt="${escape(alt)}" aria-hidden="true" loading="eager" decoding="async" referrerpolicy="no-referrer">`;
   // Display the product region of catalog banners without modifying the source asset.
   if (
     crop &&
@@ -107,9 +125,9 @@ export function photoMarkup(image, alt, crop) {
     crop.width > 0 &&
     crop.height > 0
   ) {
-    return `<div class="photo-crop" style="aspect-ratio:${crop.width}/${crop.height};--photo-width:${(1200 / crop.width) * 100}%;--photo-height:${(630 / crop.height) * 100}%;--photo-x:${(-crop.x / crop.width) * 100}%;--photo-y:${(-crop.y / crop.height) * 100}%">${img}</div>`;
+    return `<div class="photo-crop catalog-photo" style="aspect-ratio:${crop.width}/${crop.height};--photo-width:${(1200 / crop.width) * 100}%;--photo-height:${(630 / crop.height) * 100}%;--photo-x:${(-crop.x / crop.width) * 100}%;--photo-y:${(-crop.y / crop.height) * 100}%">${img}</div>`;
   }
-  return img;
+  return `<div class="catalog-photo">${img}</div>`;
 }
 export function barChart(
   rows,

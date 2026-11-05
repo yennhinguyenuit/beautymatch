@@ -1,6 +1,7 @@
 """Offline tests of frontend projections; these do not replace Frappe acceptance tests."""
 
 import importlib.util
+import ast
 import json
 import sys
 import unittest
@@ -19,20 +20,26 @@ class TestFrontendProjection(unittest.TestCase):
 		self.frappe.get_list = Mock(return_value=["LEAD-1"])
 		self.frappe.get_doc = Mock()
 		self.frappe.parse_json = json.loads
+		self.frappe.db = Mock()
+		self.frappe.db.exists.return_value = False
+		self.frappe.db.get_single_value.return_value = "Asia/Ho_Chi_Minh"
 		self.dashboard = ModuleType("beautymatch.api.dashboard")
-		self.dashboard.get_dashboard = Mock(return_value={
-			"start_date": "2026-11-01", "end_date": "2026-11-05",
-			"kpis": {"total_sessions": 2, "interested_rate": 50}, "charts": {},
+		self.dashboard.get_dashboard_data = Mock(return_value={
+			"kpis": {"total_sessions": 2, "leads_with_profile": 1, "interest_rate": 50, "average_top1_score": 81},
+			"charts": {"top_skin_concerns": [{"skin_concern": "Acne", "count": 1}], "top_interested_products": []},
 		})
 		self.profile = ModuleType("beautymatch.api.profile")
 		self.profile.CONCERN_FIELDS = ("concern_acne", "concern_barrier")
 		self.profile._check_consultation_role = Mock()
 		self.profile._check_lead_access = Mock()
+		self.profile._check_lead_access.return_value = SimpleNamespace(name="LEAD-1",get=lambda key: "Test Customer" if key=="first_name" else None)
+		self.summary = ModuleType("beautymatch.api.lead_summary")
+		self.summary.get_lead_summary = Mock(return_value={"history": []})
 		self.recommendation = ModuleType("beautymatch.api.recommendation")
 		self.recommendation.PROFILE_FIELDS = ("skin_type", "concern_acne")
-		self.recommendation.get_consultation_history = Mock(return_value={"sessions": []})
+		self.recommendation.get_customer_history = Mock(return_value={"sessions": []})
 		self.recommendation.get_recommendation_result = Mock(return_value={"results": []})
-		modules = {"frappe": self.frappe, "beautymatch.api.dashboard": self.dashboard,
+		modules = {"frappe": self.frappe, "beautymatch.api.dashboard": self.dashboard, "beautymatch.api.lead_summary": self.summary,
 			"beautymatch.api.profile": self.profile, "beautymatch.api.recommendation": self.recommendation}
 		with patch.dict(sys.modules, modules):
 			spec = importlib.util.spec_from_file_location("frontend_under_test", Path(__file__).parents[1] / "beautymatch/api/frontend.py")
@@ -40,7 +47,7 @@ class TestFrontendProjection(unittest.TestCase):
 			spec.loader.exec_module(self.module)
 
 	def test_context_checks_access_before_catalog_and_excludes_contacts(self):
-		self.frappe.get_doc.return_value = SimpleNamespace(crm_lead="LEAD-1", profile_snapshot=json.dumps({"skin_type": "DRY", "email": "private", "full_name": "private"}), recommendation_items=[SimpleNamespace(product="P1")])
+		self.frappe.get_doc.return_value = SimpleNamespace(crm_lead="LEAD-1",creation="2026-11-05T10:00:00+07:00", profile_snapshot=json.dumps({"skin_type": "DRY", "email": "private", "full_name": "private"}), recommendation_items=[SimpleNamespace(name="ITEM-1",product="P1",customer_feedback="None",follow_up_task=None)])
 		self.frappe.get_all.return_value = [{"name": "P1", "image_url": "/files/p.png"}]
 		result = self.module.get_result_context("SESSION")
 		self.profile._check_lead_access.assert_called_once_with("LEAD-1")
@@ -59,30 +66,43 @@ class TestFrontendProjection(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			self.module.read("get_customer_history", {"crm_lead": "L", "ignore_permissions": True})
 		self.module.read("get_customer_history", {"crm_lead": "L", "start": 20, "limit": 20})
-		self.recommendation.get_consultation_history.assert_called_once_with(crm_lead="L", start=20, limit=20)
+		self.recommendation.get_customer_history.assert_called_once_with(crm_lead="L", start=20, limit=20)
 
-	def test_dashboard_aggregates_scoped_snapshots_scores_and_feedback(self):
-		self.frappe.get_all.side_effect = [
-			[SimpleNamespace(name="S1", crm_lead="LEAD-1", profile_snapshot='{"concern_acne":1}'), SimpleNamespace(name="S2", crm_lead="LEAD-1", profile_snapshot='{"concern_acne":1,"concern_barrier":1}')],
-			[SimpleNamespace(crm_lead="LEAD-1"), SimpleNamespace(crm_lead="LEAD-1")],
-			[SimpleNamespace(rank=1, final_match_score=90, customer_feedback="Interested", product="P", product_name_snapshot="Product"), SimpleNamespace(rank=1, final_match_score=80, customer_feedback="Not Interested", product="P", product_name_snapshot="Product"), SimpleNamespace(rank=2, final_match_score=50, customer_feedback="None", product="Q", product_name_snapshot="Other")],
-		]
-		result = self.module.get_dashboard_data("2026-11-01", "2026-11-05")
-		self.assertEqual(result["kpis"]["leads_with_profile"], 1)
-		self.assertEqual(result["kpis"]["interest_rate"], 50)
-		self.assertEqual(result["kpis"]["average_top1_score"], 85)
-		self.assertEqual(result["charts"]["top_skin_concerns"][0], {"concern": "concern_acne", "count": 2})
-		self.assertEqual(result["charts"]["top_interested_products"], [{"product": "P", "product_name": "Product", "count": 1}])
-		filters = self.frappe.get_all.call_args_list[0].kwargs["filters"]
-		self.assertEqual(filters["crm_lead"], ["in", ["LEAD-1"]])
-		self.assertEqual(filters["creation"][1][1], "2026-11-05 23:59:59.999999")
-
-	def test_dashboard_with_no_visible_leads_does_not_query_private_tables(self):
-		self.frappe.get_list.return_value = []
+	def test_dashboard_delegates_task4_metrics_without_changing_semantics(self):
 		result = self.module.get_dashboard_data()
+		self.assertIs(result, self.dashboard.get_dashboard_data.return_value)
+		self.dashboard.get_dashboard_data.assert_called_once_with()
 		self.frappe.get_all.assert_not_called()
-		self.assertIsNone(result["kpis"]["average_top1_score"])
-		self.assertEqual(result["charts"]["top_interested_products"], [])
+
+	def test_dashboard_retains_backend_permission_errors(self):
+		self.dashboard.get_dashboard_data.side_effect = PermissionError
+		with self.assertRaises(PermissionError):
+			self.module.get_dashboard_data()
+
+	def test_numeric_crm_task_identifier_has_a_safe_authorized_link(self):
+		self.frappe.db.exists.return_value = True
+		self.frappe.has_permission = Mock(return_value=True)
+		self.frappe.get_doc.return_value = SimpleNamespace(name=42,status="Todo")
+		session = SimpleNamespace(recommendation_items=[SimpleNamespace(name="ITEM",follow_up_task="42",customer_feedback="Interested")])
+		result = self.module._item_context(session)[0]
+		self.assertEqual(result["task"]["url"], "/app/crm-task/42")
+		self.assertEqual(result["follow_up_status"], "CREATED")
+		self.frappe.has_permission.return_value=False
+		self.assertIsNone(self.module._item_context(session)[0]["task"])
+
+	def test_bridge_uses_actual_backend_export_names_and_signatures(self):
+		root = Path(__file__).parents[1] / "beautymatch/api"
+		for filename, expected in {
+			"recommendation.py": {"get_customer_history": ["crm_lead", "limit", "start"], "get_recommendation_result": ["session_id"]},
+			"feedback.py": {"submit_feedback": ["session_id", "item_id", "customer_feedback", "rejection_reason"]},
+			"dashboard.py": {"get_dashboard_data": []},
+		}.items():
+			tree = ast.parse((root / filename).read_text(encoding="utf-8"))
+			functions = {node.name: [arg.arg for arg in node.args.args] for node in tree.body if isinstance(node, ast.FunctionDef)}
+			for name, arguments in expected.items():
+				self.assertEqual(functions[name], arguments)
+		self.module.read("get_recommendation_result", {"session_id": "SESSION"})
+		self.recommendation.get_recommendation_result.assert_called_once_with(session_id="SESSION")
 
 
 if __name__ == "__main__":

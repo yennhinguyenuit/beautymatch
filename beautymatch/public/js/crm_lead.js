@@ -183,6 +183,14 @@ frappe.ui.form.on("CRM Lead", {
     refresh(frm) {
         if (frm.is_new()) return;
 
+        const openBeautyMatch = (path) => {
+            sessionStorage.setItem('beautymatch_customer_v1',JSON.stringify({crm_lead:frm.doc.name}));
+            sessionStorage.removeItem('beautymatch_open_session_v1');
+            window.location.assign(path);
+        };
+        frm.add_custom_button('Bắt đầu tư vấn',()=>openBeautyMatch('/beautymatch/consultation'),'BeautyMatch');
+        frm.add_custom_button('Hồ sơ & lịch sử',()=>openBeautyMatch('/beautymatch/customer'),'BeautyMatch');
+
         frm.add_custom_button(
             __("BeautyMatch Insights"),
             () => bm_open_insights(frm),

@@ -1,6 +1,6 @@
-{% extends "templates/web.html" %}
+{% extends "templates/beautymatch_app.html" %}
 {% block title %}Tư vấn chăm sóc da | BeautyMatch{% endblock %}
-{% block page_content %}
+{% block content %}
 <style>
   .bm-page, .bm-page * { box-sizing: border-box; }
   .bm-page { --bm-green:#176B5B; --bm-ink:#1F2937; --bm-muted:#65746d; --bm-line:#dce7e1; font-family: inherit; color:var(--bm-ink); padding:30px 0 65px; }
@@ -39,16 +39,29 @@
   .bm-footer-note { color:var(--bm-muted); font-size:12px; line-height:1.5; max-width:430px; }
   @media(max-width:650px) { .bm-page{padding-top:14px} .bm-section{padding:18px 15px} .bm-grid,.bm-options{grid-template-columns:1fr} .bm-desc{margin-left:0} .bm-actions{align-items:stretch} .bm-submit{width:100%} }
 </style>
-<div class="bm-page"><div class="bm-wrap">
-  <header class="bm-head"><div class="bm-eyebrow">BEAUTYMATCH • SKINCARE</div><h1>Hiểu làn da, chọn đúng sản phẩm</h1><p>Chia sẻ một vài thông tin về làn da để đội ngũ tư vấn đề xuất những sản phẩm phù hợp với nhu cầu và ngân sách của bạn.</p></header>
+<link rel="stylesheet" href="/assets/beautymatch/css/consultation.css?v=botanical-20261105-v2">
+<main id="main" class="bm-page" tabindex="-1"><div class="bm-wrap">
+  <header class="bm-head"><div><div class="bm-eyebrow">TƯ VẤN CÁ NHÂN HÓA / BEAUTYMATCH</div><h1>Tạo hồ sơ<br><em>làn da của bạn.</em></h1></div><p>Một chút lắng nghe, một lựa chọn phù hợp hơn. Chia sẻ nhu cầu và tình trạng làn da để mỗi gợi ý đều bắt đầu từ chính bạn.</p></header>
+  <nav class="bm-stepper" aria-label="Các mục tư vấn">
+    <button class="bm-step is-current" type="button" data-consult-step="1" aria-controls="bm-section-1" aria-current="step"><span aria-hidden="true">01</span><span>Khách hàng</span><span class="bm-step-complete" aria-hidden="true">✓</span></button>
+    <button class="bm-step" type="button" data-consult-step="2" aria-controls="bm-section-2"><span aria-hidden="true">02</span><span>Làn da</span><span class="bm-step-complete" aria-hidden="true">✓</span></button>
+    <button class="bm-step" type="button" data-consult-step="3" aria-controls="bm-section-3"><span aria-hidden="true">03</span><span>Nhu cầu</span><span class="bm-step-complete" aria-hidden="true">✓</span></button>
+    <button class="bm-step" type="button" data-consult-step="4" aria-controls="bm-section-4"><span aria-hidden="true">04</span><span>Xác nhận</span><span class="bm-step-complete" aria-hidden="true">✓</span></button>
+  </nav>
+  <div class="bm-consultation-grid">
+  <aside class="bm-botanical-story" aria-label="Chăm sóc bắt đầu từ thấu hiểu">
+    <img src="/assets/beautymatch/images/botanical/leaf-detail.webp" alt="" width="1086" height="1448" decoding="async">
+    <div class="bm-story-content"><span class="bm-story-label">CHĂM SÓC TỪ GỐC RỄ</span><p>Mỗi làn da,<br>một câu chuyện.</p><span>Lắng nghe làn da hôm nay.<br>Chọn điều phù hợp cho ngày mai.</span></div>
+    <div class="bm-progress-card"><div><strong>Hành trình của bạn</strong><span id="bm-progress-text" role="status">0/4 mục đã hoàn tất</span></div><div class="bm-form-progress" role="progressbar" aria-label="Mức độ hoàn tất biểu mẫu" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"><span></span></div><p>Thông tin được lưu sau khi bạn xác nhận.</p></div>
+  </aside>
   <form id="bm-consultation-form" class="bm-layout" novalidate>
-    <section class="bm-section" aria-labelledby="bm-heading-1"><div class="bm-section-title"><span class="bm-num">1</span><h2 id="bm-heading-1">Thông tin liên hệ</h2></div><div class="bm-grid">
+    <section class="bm-section" id="bm-section-1" data-consultation-section="1" aria-labelledby="bm-heading-1"><div class="bm-section-title"><span class="bm-num" aria-hidden="true">01</span><h2 id="bm-heading-1" tabindex="-1">Thông tin liên hệ</h2></div><p class="bm-section-intro">Bắt đầu bằng một lời chào. Thông tin này giúp kết nối hành trình tư vấn với đúng khách hàng.</p><div class="bm-grid">
       <div class="bm-field bm-field-full"><label for="bm-full-name">Họ và tên <span class="bm-required">*</span></label><input class="bm-input" id="bm-full-name" name="full_name" type="text" maxlength="140" autocomplete="name" required placeholder="Ví dụ: Nguyễn Thị An"></div>
       <div class="bm-field"><label for="bm-email">Email</label><input class="bm-input" id="bm-email" name="email" type="email" maxlength="140" autocomplete="email" placeholder="ten@example.com"></div>
       <div class="bm-field"><label for="bm-phone">Số điện thoại</label><input class="bm-input" id="bm-phone" name="phone" type="tel" maxlength="24" autocomplete="tel" placeholder="0901234567"></div>
       <p class="bm-hint bm-field-full">Vui lòng nhập ít nhất một trong hai thông tin: email hoặc số điện thoại.</p>
-    </div></section>
-    <section class="bm-section" aria-labelledby="bm-heading-2"><div class="bm-section-title"><span class="bm-num">2</span><h2 id="bm-heading-2">Tình trạng làn da</h2></div><div class="bm-grid">
+    </div><div class="bm-section-footer"><span>01 / 04</span><button class="bm-next" type="button" data-consult-step="2">Tiếp tục: Làn da <span aria-hidden="true">↗</span></button></div></section>
+    <section class="bm-section" id="bm-section-2" data-consultation-section="2" aria-labelledby="bm-heading-2"><div class="bm-section-title"><span class="bm-num" aria-hidden="true">02</span><h2 id="bm-heading-2" tabindex="-1">Tình trạng làn da</h2></div><p class="bm-section-intro">Cảm nhận của bạn là điểm khởi đầu. Chọn những điều mô tả đúng nhất làn da hiện tại.</p><div class="bm-grid">
       <div class="bm-field"><label for="bm-skin">Loại da <span class="bm-required">*</span></label><select class="bm-select" id="bm-skin" name="skin_type" required><option value="">Chọn loại da</option><option value="OILY">Da dầu</option><option value="DRY">Da khô</option><option value="COMBINATION">Da hỗn hợp</option><option value="NORMAL">Da thường</option></select></div>
       <div class="bm-field"><label for="bm-sensitivity">Độ nhạy cảm <span class="bm-required">*</span></label><select class="bm-select" id="bm-sensitivity" name="sensitivity" required><option value="">Chọn độ nhạy cảm</option><option value="Sensitive">Da nhạy cảm</option><option value="Not specifically sensitive">Không đặc biệt nhạy cảm</option></select></div>
       <div class="bm-field bm-field-full"><span class="bm-label">Vấn đề da đang quan tâm <span class="bm-required">*</span></span><p class="bm-hint">Chọn từ 1 đến 3 vấn đề phù hợp nhất.</p><div class="bm-options" id="bm-concerns">
@@ -60,8 +73,8 @@
         <label class="bm-option"><input type="checkbox" name="concern_dullness" value="1">Da xỉn màu</label>
         <label class="bm-option"><input type="checkbox" name="concern_aging" value="1">Dấu hiệu lão hóa</label>
       </div></div>
-    </div></section>
-    <section class="bm-section" aria-labelledby="bm-heading-3"><div class="bm-section-title"><span class="bm-num">3</span><h2 id="bm-heading-3">Nhu cầu sản phẩm</h2></div><div class="bm-grid">
+    </div><div class="bm-section-footer"><span>02 / 04</span><button class="bm-next" type="button" data-consult-step="3">Tiếp tục: Nhu cầu <span aria-hidden="true">↗</span></button></div></section>
+    <section class="bm-section" id="bm-section-3" data-consultation-section="3" aria-labelledby="bm-heading-3"><div class="bm-section-title"><span class="bm-num" aria-hidden="true">03</span><h2 id="bm-heading-3" tabindex="-1">Nhu cầu sản phẩm</h2></div><p class="bm-section-intro">Một lựa chọn vừa vặn với thói quen, thành phần bạn ưu tiên và ngân sách của bạn.</p><div class="bm-grid">
       <div class="bm-field"><label for="bm-category">Loại sản phẩm cần tư vấn <span class="bm-required">*</span></label><select class="bm-select" id="bm-category" name="requested_category" required><option value="">Chọn danh mục</option><option value="CLEANSER">Sữa rửa mặt</option><option value="TONER">Toner / nước cân bằng</option><option value="SERUM">Serum</option><option value="MOISTURIZER">Kem dưỡng ẩm</option><option value="SUNSCREEN">Kem chống nắng</option></select></div>
       <div class="bm-field"><label for="bm-budget">Ngân sách tối đa (VNĐ) <span class="bm-required">*</span></label><input class="bm-input" type="number" id="bm-budget" name="max_budget" min="1" step="1000" placeholder="Ví dụ: 300000" required></div>
       <div class="bm-field bm-field-full"><span class="bm-label">Thành phần muốn tránh (không bắt buộc)</span><p class="bm-hint">Chỉ chọn nếu bạn muốn tránh thành phần đó.</p><div class="bm-options">
@@ -70,14 +83,16 @@
         <label class="bm-option"><input type="checkbox" name="avoid_essential_oil" value="1">Tinh dầu</label>
       </div></div>
       <div class="bm-field bm-field-full"><label for="bm-brand">Thương hiệu yêu thích (không bắt buộc)</label><input class="bm-input" id="bm-brand" name="preferred_brand" type="text" maxlength="140" placeholder="Ví dụ: La Roche-Posay"></div>
-    </div></section>
-    <section class="bm-section" aria-labelledby="bm-heading-4"><div class="bm-section-title"><span class="bm-num">4</span><h2 id="bm-heading-4">Xác nhận thông tin</h2></div>
+    </div><div class="bm-section-footer"><span>03 / 04</span><button class="bm-next" type="button" data-consult-step="4">Tiếp tục: Xác nhận <span aria-hidden="true">↗</span></button></div></section>
+    <section class="bm-section" id="bm-section-4" data-consultation-section="4" aria-labelledby="bm-heading-4"><div class="bm-section-title"><span class="bm-num" aria-hidden="true">04</span><h2 id="bm-heading-4" tabindex="-1">Xác nhận thông tin</h2></div><p class="bm-section-intro">Hồ sơ và các gợi ý sẽ được lưu trong CRM để đội ngũ tiếp tục chăm sóc khách hàng.</p>
       <label class="bm-consent"><input type="checkbox" name="consent" id="bm-consent" value="1"><span>Tôi đồng ý cho BeautyMatch lưu thông tin đã cung cấp để phục vụ tư vấn sản phẩm và theo dõi lịch sử tư vấn. <span class="bm-required">*</span></span></label>
       <div id="bm-form-error" class="bm-alert bm-separator" role="alert" aria-live="polite" hidden></div>
       <div class="bm-actions bm-separator"><span class="bm-footer-note">Các gợi ý chỉ mang tính tham khảo chăm sóc da, không thay thế tư vấn chuyên môn y tế.</span><button type="submit" id="bm-submit" class="bm-submit">Xem gợi ý sản phẩm →</button></div>
     </section>
   </form>
-</div></div>
+  </div>
+</div></main>
+<script type="module" src="/assets/beautymatch/js/consultation.mjs?v=botanical-20261105-v2"></script>
 <script>
 (function () {
   'use strict';
@@ -87,6 +102,14 @@
   var submitButton = document.getElementById('bm-submit');
   var busy = false;
   var pending = null;
+  try {
+    var retry = JSON.parse(sessionStorage.getItem('beautymatch_intake_retry_v1') || 'null');
+    var selected = JSON.parse(sessionStorage.getItem('beautymatch_customer_v1') || 'null');
+    if (retry && retry.crm_lead === ((selected && selected.crm_lead) || null)) {
+      pending = retry.payload;
+      Object.keys(pending).forEach(function(name){var input=field(name);if(!input)return;if(input.type==='checkbox')input.checked=!!Number(pending[name]);else input.value=pending[name] == null ? '' : pending[name];});
+    }
+  } catch(e) {pending=null;}
   var concernFields = ['concern_oil_control','concern_acne','concern_post_acne','concern_dehydration','concern_barrier','concern_dullness','concern_aging'];
   var avoidFields = ['avoid_fragrance','avoid_alcohol_denat','avoid_essential_oil'];
   function field(name) { return form.elements.namedItem(name); }
@@ -135,6 +158,12 @@
     return 'Không thể lưu thông tin. Vui lòng thử lại.';
   }
   function submitApi(payload) {
+    if(window.beautymatchSelectedLead){
+      return fetch('/api/method/beautymatch.api.frontend.save_consultation',{
+        method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Frappe-CSRF-Token':document.querySelector('meta[name="csrf-token"]').content},
+        body:JSON.stringify({payload:JSON.stringify(payload),crm_lead:window.beautymatchSelectedLead})
+      }).then(function(r){return r.json().then(function(body){if(!r.ok||body.exc)throw new Error(parseError(body));return body.message;});});
+    }
     if (window.frappe && typeof window.frappe.call === 'function') {
       return new Promise(function(resolve,reject){
         window.frappe.call({
@@ -148,17 +177,18 @@
     }
     return fetch('/api/method/beautymatch.api.profile.save_beauty_profile',{
       method:'POST',credentials:'same-origin',
-      headers:{'Content-Type':'application/json','X-Frappe-CSRF-Token':(window.frappe && window.frappe.csrf_token) || window.csrf_token || ''},
+      headers:{'Content-Type':'application/json','X-Frappe-CSRF-Token':(window.frappe && window.frappe.csrf_token) || document.querySelector('meta[name="csrf-token"]').content || ''},
       body:JSON.stringify({payload:JSON.stringify(payload)})
     }).then(function(response){return response.json().then(function(body){if(!response.ok||body.exc)throw new Error(parseError(body));return body.message;});});
   }
-  form.addEventListener('input',function(){clearError(); pending = null;});
-  form.addEventListener('change',function(){clearError(); pending = null;});
+  form.addEventListener('input',function(){clearError(); pending = null;sessionStorage.removeItem('beautymatch_intake_retry_v1');});
+  form.addEventListener('change',function(){clearError(); pending = null;sessionStorage.removeItem('beautymatch_intake_retry_v1');});
   form.addEventListener('submit',async function(event){
     event.preventDefault(); if(busy) return; clearError();
     if (!pending) {var id = uuid();pending = buildPayload(id);}
     var message = validate(pending);
     if (message) {pending = null;showError(message);return;}
+    sessionStorage.setItem('beautymatch_intake_retry_v1',JSON.stringify({crm_lead:window.beautymatchSelectedLead || null,payload:pending}));
     busy=true;submitButton.disabled=true;submitButton.textContent='Đang lưu thông tin…';
     try {
       var result = await submitApi(pending);
@@ -167,6 +197,10 @@
         crm_lead:result.crm_lead, beauty_profile:result.beauty_profile,
         request_id:result.request_id, profile_version:result.profile_version
       }));
+      sessionStorage.setItem('beautymatch_customer_v1',JSON.stringify({crm_lead:result.crm_lead}));
+      sessionStorage.removeItem('beautymatch_open_session_v1');
+      sessionStorage.removeItem('beautymatch_sample_profile_v1');
+      sessionStorage.removeItem('beautymatch_intake_retry_v1');
       window.location.assign('/beautymatch/result');
     } catch(error) {showError(error && error.message ? error.message : 'Không thể kết nối máy chủ.');}
     finally {busy=false;submitButton.disabled=false;submitButton.textContent='Xem gợi ý sản phẩm →';}

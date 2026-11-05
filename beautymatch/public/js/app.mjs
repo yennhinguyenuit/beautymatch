@@ -3,12 +3,22 @@ import {
   createLiveApi,
   readConsultation,
   feedbackMessage,
-} from "./api.mjs";
-import { createDemoApi } from "./demo-api.mjs";
+  normalizeRecommendation,
+} from "./api.mjs?v=botanical-20261105-v2";
+import { createDemoApi } from "./demo-api.mjs?v=botanical-20261105-v2";
+import { renderDashboardView } from "./dashboard-view.mjs?v=botanical-20261105-v2";
+import { enhanceProductPhotos } from "./product-photos.mjs?v=botanical-20261105-v2";
+import {
+  navigation,
+  customerSelection,
+  selectCustomer,
+  leadUrl,
+} from "./navigation.mjs?v=botanical-20261105-v2";
 import {
   escape,
   money,
   number,
+  dateTime,
   icon,
   safeUrl,
   statePanel,
@@ -19,7 +29,7 @@ import {
   barChart,
   concerns,
   categories,
-} from "./components.mjs";
+} from "./components.mjs?v=botanical-20261105-v2";
 
 const root = document.getElementById("app");
 const page =
@@ -62,12 +72,15 @@ root.innerHTML = `
   <dialog class="dialog" id="dialog" aria-labelledby="dialog-title"></dialog><div id="toast" role="status" class="toast" hidden></div>`;
 const content = document.getElementById("content");
 const dialog = document.getElementById("dialog");
+root.querySelector(".topbar").outerHTML = navigation(page);
 
 function resultHeader() {
-  return `<div class="breadcrumbs"><a href="/beautymatch/consultation">Tư vấn làn da</a><span>/</span><span>Kết quả dành cho bạn</span></div><section class="hero"><div><span class="eyebrow">MỖI LÀN DA, MỘT CÁCH CHĂM SÓC</span><h1>Một chút thấu hiểu.<br><em>Một lựa chọn phù hợp hơn.</em></h1><p>Những gợi ý được chọn dựa trên làn da, mối quan tâm và ngân sách của bạn. Khám phá điều phù hợp với riêng mình.</p></div><div class="hero-seal" aria-hidden="true"><span>CHỌN LỌC</span>${icon("leaf")}<span>CHO RIÊNG BẠN</span></div></section>`;
+  return `<div class="breadcrumbs"><a href="/beautymatch/consultation">Tư vấn làn da</a><span>/</span><span>Kết quả dành cho bạn</span></div><section class="hero results-hero"><div data-reveal><span class="eyebrow">GỢI Ý DÀNH RIÊNG CHO BẠN</span><h1>Sản phẩm phù hợp<br><em>với làn da của bạn.</em></h1><p>Dựa trên làn da và nhu cầu của bạn, chúng tôi đã chọn những gợi ý chăm sóc có cơ sở. Một lựa chọn nhỏ, dành cho vẻ đẹp riêng.</p></div><div id="result-profile" class="hero-profile" data-reveal></div></section>`;
 }
 function dashboardHeader() {
-  return `<section class="dashboard-heading"><div><span class="eyebrow">BEAUTYMATCH / CRM ANALYTICS</span><h1>Thấu hiểu từ mỗi lượt tư vấn</h1><p>Theo dõi nhu cầu làn da và những sản phẩm được khách hàng quan tâm.</p></div><button class="button secondary" data-action="export">${icon("download")} Xuất báo cáo CSV</button></section><form id="report-form" class="report-controls"><label class="field" for="start-date">Từ ngày<input type="date" id="start-date" value="${startDate}" required></label><label class="field" for="end-date">Đến ngày<input type="date" id="end-date" value="${today}" required></label><button class="button primary" type="submit">Xem báo cáo ${icon("arrow")}</button><button class="button secondary" type="button" data-action="retry">${icon("refresh")} Làm mới</button><span class="updated" id="updated">Khoảng thời gian tính cả ngày bắt đầu và kết thúc.</span></form>`;
+  if (!demo)
+    return `<section class="dashboard-heading editorial-dashboard" data-reveal><div><span class="eyebrow">KHÔNG GIAN CHĂM SÓC KHÁCH HÀNG</span><h1>Tổng quan<br><em>BeautyMatch CRM.</em></h1><p>Mỗi lượt tư vấn để lại một câu chuyện. Cùng thấu hiểu nhu cầu và tiếp nối những sự quan tâm.</p></div><button class="button primary" data-action="export">${icon("download")} Xuất báo cáo CSV</button></section><div class="report-controls"><span class="muted">Toàn bộ thời gian · Báo cáo hiện chưa hỗ trợ lọc theo ngày.</span><button class="button secondary" type="button" data-action="retry">${icon("refresh")} Làm mới</button><span class="updated" id="updated">Dữ liệu thực từ CRM</span></div>`;
+  return `<section class="dashboard-heading editorial-dashboard" data-reveal><div><span class="eyebrow">KHÔNG GIAN CHĂM SÓC KHÁCH HÀNG</span><h1>Tổng quan<br><em>BeautyMatch CRM.</em></h1><p>Mỗi lượt tư vấn để lại một câu chuyện. Cùng thấu hiểu nhu cầu và tiếp nối những sự quan tâm.</p></div><button class="button primary" data-action="export">${icon("download")} Xuất báo cáo CSV</button></section><form id="report-form" class="report-controls"><label class="field" for="start-date">Từ ngày<input type="date" id="start-date" value="${startDate}" required></label><label class="field" for="end-date">Đến ngày<input type="date" id="end-date" value="${today}" required></label><button class="button primary" type="submit">Xem báo cáo ${icon("arrow")}</button><button class="button secondary" type="button" data-action="retry">${icon("refresh")} Làm mới</button><span class="updated" id="updated">Khoảng thời gian tính cả ngày bắt đầu và kết thúc.</span></form>`;
 }
 function demoControls() {
   return `<div class="demo-scenarios"><label class="field">Trạng thái minh họa<select id="demo-scenario"><option value="three">${page === "result" ? "3 sản phẩm" : "Có dữ liệu"}</option>${page === "result" ? '<option value="one">1 sản phẩm</option><option value="two">2 sản phẩm</option>' : ""}<option value="empty">Không có kết quả</option><option value="error">Lỗi kết nối</option></select></label>${page === "result" ? '<label class="field">Kết quả gửi phản hồi<select id="demo-feedback"><option value="CREATED">CREATED · Thành công</option><option value="PENDING">PENDING · Chờ xử lý</option><option value="ERROR">Lỗi gửi phản hồi</option></select></label>' : ""}</div>`;
@@ -97,14 +110,14 @@ function sessionCache(pending, value) {
       "beautymatch_result_v1",
       JSON.stringify({
         request_id: pending.request_id,
-        recommendation_session: value,
+        session_id: value,
       }),
     );
   try {
     const saved = JSON.parse(store.getItem("beautymatch_result_v1") || "null");
-    return saved?.request_id === pending.request_id &&
-      typeof saved.recommendation_session === "string"
-      ? saved.recommendation_session
+    const id = saved?.session_id || saved?.recommendation_session;
+    return saved?.request_id === pending.request_id && typeof id === "string"
+      ? id
       : null;
   } catch {
     return null;
@@ -113,19 +126,12 @@ function sessionCache(pending, value) {
 function renderResults(session, context, contextError) {
   const items = session.results.slice(0, 3);
   const assets = new Map((context?.products || []).map((p) => [p.name, p]));
-  content.innerHTML = `${contextError ? `<div class="inline-alert" role="status">Kết quả đã sẵn sàng. Chưa tải được hồ sơ hoặc ảnh sản phẩm. <button class="text-button" data-action="retry">Thử tải lại</button></div>` : ""}${profileCard(context?.profile, session)}<div class="section-heading"><div><h2>Được chọn cho làn da bạn</h2><p>${items.length ? "Mỗi gợi ý đều có lý do. Bạn là người đưa ra lựa chọn." : "Sự phù hợp luôn là ưu tiên của chúng tôi."}</p></div><span class="small-pill">${items.length} gợi ý phù hợp</span></div>${items.length ? `<div class="product-grid">${items.map((item) => productCard(item, assets.get(item.product), session.status === "Closed")).join("")}</div>` : statePanel({ title: "Chưa tìm thấy sự phù hợp", text: session.result_message || "Hãy thử điều chỉnh ngân sách hoặc nhu cầu ở một lượt tư vấn mới.", consultation: true })}<aside class="advice">${icon("shield")}<p><strong>Lựa chọn có cơ sở, chăm sóc có lắng nghe.</strong><br>Gợi ý dựa trên thông tin bạn cung cấp và dữ liệu sản phẩm. Sản phẩm có thể chỉ đáp ứng một phần nhu cầu; hãy xem giải thích và cảnh báo của từng gợi ý.</p></aside><div class="results-footer"><p>Thông tin mang tính tham khảo chăm sóc da.</p><div class="button-row"><button class="text-button" data-action="history">${icon("clock")} Lịch sử tư vấn</button><a class="button secondary" href="/beautymatch/consultation">Điều chỉnh nhu cầu ${icon("arrow")}</a></div></div>`;
-  content.querySelectorAll("img").forEach((img) =>
-    img.addEventListener(
-      "error",
-      () => {
-        const placeholder = document.createElement("div");
-        placeholder.className = "photo-placeholder";
-        placeholder.innerHTML = `${icon("leaf")}<span>Chưa có ảnh sản phẩm</span>`;
-        img.replaceWith(placeholder);
-      },
-      { once: true },
-    ),
+  document.getElementById("result-profile").innerHTML = profileCard(
+    context?.profile,
+    session,
   );
+  content.innerHTML = `${contextError ? `<div class="inline-alert" role="status">Kết quả đã sẵn sàng. Chưa tải được hồ sơ bổ sung. <button class="text-button" data-action="retry">Thử tải lại</button></div>` : ""}<div class="section-heading"><div><h2>Được chọn cho làn da bạn</h2><p>${items.length ? "Mỗi gợi ý đều có lý do. Bạn là người đưa ra lựa chọn." : "Sự phù hợp luôn là ưu tiên của chúng tôi."}</p></div><span class="small-pill">${items.length} gợi ý phù hợp</span></div>${items.length ? `<div class="product-grid count-${items.length}">${items.map((item) => productCard(item, assets.get(item.product), session.status === "Closed")).join("")}</div>` : statePanel({ title: "Chưa tìm thấy sự phù hợp", text: session.result_message || "Hãy thử điều chỉnh ngân sách hoặc nhu cầu ở một lượt tư vấn mới.", consultation: true })}<aside class="advice">${icon("shield")}<p><strong>Lựa chọn có cơ sở, chăm sóc có lắng nghe.</strong><br>Gợi ý dựa trên thông tin bạn cung cấp và dữ liệu sản phẩm. Sản phẩm có thể chỉ đáp ứng một phần nhu cầu; hãy xem giải thích và cảnh báo của từng gợi ý.</p></aside><div class="results-footer"><p>Thông tin mang tính tham khảo chăm sóc da.</p><div class="button-row"><button class="text-button" data-action="history">${icon("clock")} Lịch sử tư vấn</button><a class="button secondary" href="/beautymatch/consultation">Điều chỉnh nhu cầu ${icon("arrow")}</a></div></div>`;
+  enhanceProductPhotos(content);
   for (const [id, response] of savedFeedback) showFeedback(id, response);
 }
 async function loadResult(selectedSession = null) {
@@ -133,11 +139,22 @@ async function loadResult(selectedSession = null) {
   loading = true;
   content.setAttribute("aria-busy", "true");
   content.innerHTML = skeleton();
+  document.getElementById("result-profile").innerHTML = "";
   try {
+    let reopen = null;
+    try {
+      reopen = JSON.parse(
+        storage().getItem("beautymatch_open_session_v1") || "null",
+      );
+    } catch {
+      /* invalid stored context is ignored */
+    }
     consultation = demo
       ? { crm_lead: "DEMO-LEAD" }
-      : readConsultation(storage());
-    if (!demo && !consultation) {
+      : reopen?.session_id || selectedSession
+        ? null
+        : readConsultation(storage());
+    if (!demo && !consultation && !selectedSession && !reopen?.session_id) {
       content.innerHTML = statePanel({
         title: "Bắt đầu từ làn da của bạn",
         text: "Chưa có phiên tư vấn trong tab này. Hoàn thành trang tư vấn để nhận những gợi ý dành riêng cho bạn.",
@@ -148,27 +165,53 @@ async function loadResult(selectedSession = null) {
     let session;
     if (demo) session = await api.result();
     else {
-      const existing = selectedSession || sessionCache(consultation);
+      const existing =
+        selectedSession || reopen?.session_id || sessionCache(consultation);
       session = existing
         ? await api.result(existing)
         : await api.generate(consultation);
       // Cache only the generated request's own session; history navigation cannot replace it.
-      if (!selectedSession && session.recommendation_session)
-        sessionCache(consultation, session.recommendation_session);
+      if (!selectedSession && !reopen && consultation && session.session_id)
+        sessionCache(consultation, session.session_id);
     }
-    if (!session.recommendation_session || !Array.isArray(session.results))
-      throw new ApiError(
-        "Kết quả API thiếu phiên tư vấn hoặc danh sách sản phẩm.",
+    session = normalizeRecommendation(session);
+    if (!demo) {
+      consultation = { ...consultation, crm_lead: session.crm_lead };
+      selectCustomer(session.crm_lead);
+      sessionStorage.setItem(
+        "beautymatch_open_session_v1",
+        JSON.stringify({
+          session_id: session.session_id,
+          crm_lead: session.crm_lead,
+        }),
       );
+    }
     currentSession = session;
     let contextError = false;
     try {
-      currentContext = await api.context(session.recommendation_session);
+      currentContext = await api.context(session.session_id);
     } catch {
       currentContext = null;
       contextError = true;
     }
     renderResults(session, currentContext, contextError);
+    if (!demo && currentContext?.customer) {
+      const customer = currentContext.customer;
+      content.insertAdjacentHTML(
+        "afterbegin",
+        `<section class="customer-session-bar"><div><strong>${escape(customer.display_name)}</strong><p class="muted">Phiên ${escape(session.session_id)} · ${escape(dateTime(currentContext.created_at))}</p></div><div class="button-row"><a class="button secondary" href="/beautymatch/customer">Hồ sơ & lịch sử</a><a class="button secondary" href="${escape(leadUrl(customer.crm_lead))}">Trở lại CRM Lead</a></div></section>`,
+      );
+      for (const item of currentContext.items || [])
+        if (
+          item.follow_up_status === "CREATED" ||
+          item.follow_up_status === "PENDING"
+        )
+          showFeedback(item.item_id, {
+            ...item,
+            customer_feedback: "Interested",
+            follow_up_task: item.task?.name,
+          });
+    }
   } catch (error) {
     currentSession = null;
     content.innerHTML = statePanel({
@@ -197,17 +240,11 @@ function reportDates() {
     );
   return { start_date: start, end_date: end };
 }
-function metric(label, value, glyph, note, unit = "") {
-  return `<article class="kpi"><div class="kpi-head"><span>${label}</span><span>${icon(glyph)}</span></div><div class="kpi-value">${value == null ? "—" : number(value)}<small>${value == null ? "" : unit}</small></div><p>${note}</p></article>`;
-}
-function chart(title, subtitle, rows, key, vertical = false) {
-  return `<section class="chart-panel"><div class="chart-title"><h2>${title}</h2>${icon(vertical ? "heart" : "leaf")}</div><p class="chart-subtitle">${subtitle}</p>${barChart(rows, key, { vertical })}<details><summary>Xem bảng dữ liệu</summary><table class="data-table"><caption class="sr-only">${title}</caption><thead><tr><th scope="col">${vertical ? "Sản phẩm" : "Mối quan tâm"}</th><th scope="col">Lượt</th></tr></thead><tbody>${rows.map((row) => `<tr><td>${escape(row[key])}</td><td>${number(row.count)}</td></tr>`).join("") || '<tr><td colspan="2">Chưa có dữ liệu</td></tr>'}</tbody></table></details><p class="chart-note">${vertical ? "Số phản hồi Quan tâm theo sản phẩm trong kỳ." : "Một phiên có thể có nhiều mối quan tâm về da."}</p></section>`;
-}
 async function loadDashboard() {
   if (loading) return;
   let dates;
   try {
-    dates = reportDates();
+    dates = demo ? reportDates() : {};
   } catch (error) {
     notify(error.message);
     return;
@@ -232,18 +269,7 @@ async function loadDashboard() {
     )
       throw new ApiError("Báo cáo API chưa đúng cấu trúc.");
     dashboardData = data;
-    const k = data.kpis;
-    const skinRows = (data.charts.top_skin_concerns || []).map((row) => ({
-      ...row,
-      label: concerns[row.concern] || row.concern,
-    }));
-    const products = data.charts.top_interested_products || [];
-    const missing = [
-      "leads_with_profile",
-      "interest_rate",
-      "average_top1_score",
-    ].filter((key) => !(key in k));
-    content.innerHTML = `${missing.length ? '<div class="inline-alert">Một số chỉ số chưa được API cung cấp. Các ô tương ứng hiển thị dấu —.</div>' : ""}<div class="kpi-grid">${metric("Lượt tư vấn", k.total_sessions, "users", "Tổng phiên trong khoảng đã chọn")}${metric("Khách có hồ sơ", k.leads_with_profile, "leaf", "Lead có hồ sơ Active, đồng ý lưu trữ")}${metric("Tỷ lệ quan tâm", k.interest_rate, "heart", "Trên các sản phẩm đã có phản hồi", "%")}${metric("Độ phù hợp Top 1", k.average_top1_score, "spark", "Điểm trung bình gợi ý đầu tiên", "%")}</div><div class="chart-grid">${chart("Làn da đang cần điều gì?", "Các mối quan tâm phổ biến trong phiên tư vấn", skinRows, "label")}${chart("Những lựa chọn được yêu thích", "Sản phẩm nhận nhiều sự quan tâm nhất", products, "product_name", true)}</div><div class="report-note">${icon("shield")}<p>Dữ liệu chỉ gồm CRM Lead bạn có quyền truy cập. Điểm Top 1 bỏ qua phiên không có gợi ý. Khách có hồ sơ được tính theo Lead duy nhất có phiên tư vấn trong kỳ.</p></div>${!demo && !k.total_sessions ? '<div class="dashboard-secondary">' + statePanel({ title: "Khởi đầu một hành trình thấu hiểu", text: "Chưa có lượt tư vấn trong khoảng thời gian này. Thử chọn khoảng thời gian khác hoặc tạo lượt tư vấn đầu tiên.", consultation: true }) + "</div>" : ""}`;
+    content.innerHTML = renderDashboardView(data, { demo });
     document.getElementById("updated").textContent =
       `Cập nhật ${new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" }).format(new Date())} · ${demo ? "Dữ liệu minh họa" : "Frappe CRM"}`;
   } catch (error) {
@@ -265,6 +291,7 @@ function openDialog(title, body, onClose) {
   const wasOpen = dialog.open;
   if (!wasOpen) activeDialog = { trigger: document.activeElement, onClose };
   dialog.innerHTML = `<div class="dialog-inner"><div class="dialog-head"><h2 id="dialog-title">${escape(title)}</h2><button class="icon-button" data-action="close-dialog" aria-label="Đóng">${icon("close")}</button></div>${body}</div>`;
+  enhanceProductPhotos(dialog);
   if (!wasOpen) dialog.showModal();
 }
 dialog.addEventListener("close", () => {
@@ -281,9 +308,7 @@ dialog.addEventListener("cancel", (event) => {
   if (dialog.querySelector('[aria-busy="true"]')) event.preventDefault();
 });
 function findItem(id) {
-  return currentSession?.results.find(
-    (item) => item.recommendation_item === id,
-  );
+  return currentSession?.results.find((item) => item.item_id === id);
 }
 function showFeedback(id, response) {
   const target = [...document.querySelectorAll("[data-feedback]")].find(
@@ -291,7 +316,10 @@ function showFeedback(id, response) {
   );
   if (!target) return;
   const message = feedbackMessage(response);
-  target.innerHTML = `<div class="feedback-notice ${message.kind}" role="status"><strong>${escape(message.title)}</strong>${escape(message.text)}</div>`;
+  const task = (currentContext?.items || []).find(
+    (item) => item.item_id === id,
+  )?.task;
+  target.innerHTML = `<div class="feedback-notice ${message.kind}" role="status"><strong>${escape(message.title)}</strong>${escape(message.text)}${task ? `<a class="text-button" href="${escape(task.url)}">Mở CRM Task ${escape(task.name)} · ${escape(task.status)}</a>` : ""}</div>`;
 }
 async function sendFeedback(id, choice, reason) {
   const item = findItem(id);
@@ -303,7 +331,7 @@ async function sendFeedback(id, choice, reason) {
     (previous.rejection_reason || "") === (reason || "") &&
     (choice !== "Interested" ||
       previous.follow_up_task ||
-      previous.status === "CREATED")
+      previous.follow_up_status === "CREATED")
   ) {
     showFeedback(id, previous);
     return true;
@@ -324,24 +352,33 @@ async function sendFeedback(id, choice, reason) {
   if (clicked) clicked.textContent = "Đang gửi…";
   try {
     const payload = {
-      recommendation_session: currentSession.recommendation_session,
-      recommendation_item: id,
-      feedback: choice,
+      session_id: currentSession.session_id,
+      item_id: id,
+      customer_feedback: choice,
     };
     if (choice === "Not Interested" && reason)
       payload.rejection_reason = reason;
+    if (choice === "Not Interested" && !reason)
+      throw new ApiError("Vui lòng chọn lý do không quan tâm.");
     const response = await api.feedback(payload);
     if (
-      response.recommendation_item !== id ||
-      response.recommendation_session !==
-        currentSession.recommendation_session ||
+      response.item_id !== id ||
+      response.session_id !== currentSession.session_id ||
       response.customer_feedback !== choice
     )
       throw new ApiError("Máy chủ chưa xác nhận đúng phản hồi đã gửi.");
     feedbackMessage(response); // Validate before presenting confirmation.
     item.customer_feedback = response.customer_feedback;
-    savedFeedback.set(id, response);
-    showFeedback(id, response);
+    const confirmed = { ...response, rejection_reason: reason || "" };
+    if (!demo) {
+      try {
+        currentContext = await api.context(currentSession.session_id);
+      } catch {
+        /* confirmation still uses the successful feedback response */
+      }
+    }
+    savedFeedback.set(id, confirmed);
+    showFeedback(id, confirmed);
     return true;
   } catch (error) {
     const target = card?.querySelector(".feedback-status");
@@ -371,7 +408,7 @@ function rejectDialog(id) {
   if (!item) return;
   openDialog(
     "Cảm ơn bạn đã chia sẻ",
-    `<p>Bạn chưa quan tâm đến ${escape(item.product_name)}? Bạn có thể chọn lý do để chúng tôi hiểu hơn. Đây là thông tin không bắt buộc.</p><form id="reject-form" data-id="${escape(id)}"><label class="field" for="rejection-reason">Lý do (không bắt buộc)<select id="rejection-reason"><option value="">Không chọn lý do</option>${["Không thích thương hiệu", "Không phù hợp sở thích cá nhân", "Đã từng sử dụng", "Muốn tìm lựa chọn khác", "Khác"].map((value) => `<option>${value}</option>`).join("")}</select></label><div class="dialog-status muted" aria-live="polite"></div><div class="button-row"><button type="button" class="button secondary" data-action="close-dialog">Quay lại</button><button type="submit" class="button primary">Gửi phản hồi ${icon("arrow")}</button></div></form>`,
+    `<p>Bạn chưa quan tâm đến ${escape(item.product_name)}? Vui lòng chọn lý do để chúng tôi hiểu hơn.</p><form id="reject-form" data-id="${escape(id)}"><label class="field" for="rejection-reason">Lý do không quan tâm (bắt buộc)<select id="rejection-reason" required><option value="">Chọn lý do</option>${["Không thích thương hiệu", "Không phù hợp sở thích cá nhân", "Đã từng sử dụng", "Muốn tìm lựa chọn khác", "Khác"].map((value) => `<option>${value}</option>`).join("")}</select></label><div class="dialog-status muted" aria-live="polite"></div><div class="button-row"><button type="button" class="button secondary" data-action="close-dialog">Quay lại</button><button type="submit" class="button primary">Gửi phản hồi ${icon("arrow")}</button></div></form>`,
   );
 }
 async function historyDialog(start = 0, append = false) {
@@ -391,7 +428,7 @@ async function historyDialog(start = 0, append = false) {
       data.sessions
         .map(
           (session) =>
-            `<button class="history-item" data-action="open-session" data-session="${escape(session.recommendation_session)}"><div>${escape(categories[session.requested_category] || session.requested_category)} · ${money(session.max_budget)}<span>${Number(session.number_of_recommendations) || 0} gợi ý · ${escape({ Generated: "Đã tạo gợi ý", "Follow-up Created": "Đã tạo lịch theo dõi", "Feedback Received": "Đã nhận phản hồi", Closed: "Đã đóng" }[session.status] || session.status)}</span></div>${icon("arrow")}</button>`,
+            `<button class="history-item" data-action="open-session" data-session="${escape(session.session_id)}"><div>${escape(categories[session.requested_category] || session.requested_category)} · ${money(session.max_budget)}<span>${Number(session.number_of_recommendations) || 0} gợi ý · ${escape({ Generated: "Đã tạo gợi ý", "Follow-up Created": "Đã tạo lịch theo dõi", "Feedback Received": "Đã nhận phản hồi", Closed: "Đã đóng" }[session.status] || session.status)}</span></div>${icon("arrow")}</button>`,
         )
         .join("") || "<p>Chưa có lịch sử tư vấn.</p>";
     if (append) {
@@ -418,7 +455,7 @@ function productDialog(id) {
     currentContext?.products?.find(
       (product) => product.name === item.product,
     ) || {};
-  const image = safeUrl(asset.image_url);
+  const image = safeUrl(item.image_url ?? asset.image_url);
   openDialog(
     "Thông tin sản phẩm",
     `${image ? `<div class="product-photo detail-photo">${photoMarkup(image, item.product_name, asset.photo_crop)}</div>` : ""}<span class="eyebrow">${escape(item.brand)}</span><h3>${escape(item.product_name)}</h3><p class="product-price">${money(item.price)}</p><p>${escape(item.why_recommended)}</p>${asset.key_ingredients ? `<h4>Thành phần nổi bật</h4><p>${escape(asset.key_ingredients)}</p>` : ""}<p>Chưa có đường dẫn sản phẩm trong catalog.${asset.data_as_of ? ` Dữ liệu catalog: ${escape(asset.data_as_of)}.` : ""}</p><button class="button primary" data-action="close-dialog">Đã hiểu</button>`,
@@ -432,15 +469,19 @@ function exportReport() {
   const data = dashboardData;
   const rows = [
     ["BeautyMatch", demo ? "DEMO — Dữ liệu giả lập" : "Frappe CRM"],
-    ["Từ ngày", data.start_date],
-    ["Đến ngày", data.end_date],
+    ...(demo
+      ? [
+          ["Từ ngày", data.start_date],
+          ["Đến ngày", data.end_date],
+        ]
+      : [["Phạm vi", "Toàn bộ thời gian"]]),
     [],
     ["Chỉ số", "Giá trị"],
     ...Object.entries(data.kpis),
     [],
     ["Mối quan tâm", "Lượt"],
     ...(data.charts.top_skin_concerns || []).map((row) => [
-      concerns[row.concern] || row.concern,
+      row.skin_concern || concerns[row.concern] || row.concern,
       row.count,
     ]),
     [],
@@ -461,7 +502,9 @@ function exportReport() {
   );
   const a = document.createElement("a");
   a.href = url;
-  a.download = `beautymatch-${demo ? "demo-" : ""}${data.start_date}-${data.end_date}.csv`;
+  a.download = demo
+    ? `beautymatch-demo-${data.start_date}-${data.end_date}.csv`
+    : "beautymatch-toan-bo-thoi-gian.csv";
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   notify("Đã xuất báo cáo CSV.");
@@ -479,7 +522,7 @@ document.addEventListener("click", async (event) => {
   }
   if (action === "retry")
     page === "result"
-      ? loadResult(currentSession?.recommendation_session)
+      ? loadResult(currentSession?.session_id)
       : loadDashboard();
   if (action === "interested")
     await sendFeedback(control.dataset.id, "Interested");

@@ -23,11 +23,25 @@ const server = createServer(async (req, res) => {
     res.end();
     return;
   }
-  if (
-    url.pathname === "/beautymatch/result" ||
-    url.pathname === "/beautymatch/dashboard"
-  ) {
-    const page = url.pathname.endsWith("dashboard") ? "dashboard" : "result";
+  const pages = {
+    "/beautymatch": "overview",
+    "/beautymatch/": "overview",
+    "/beautymatch/result": "result",
+    "/beautymatch/dashboard": "dashboard",
+    "/beautymatch/customer": "customer",
+    "/beautymatch/consultation": "consultation",
+  };
+  if (pages[url.pathname]) {
+    const page = pages[url.pathname];
+    let childContent = "";
+    if (page === "consultation") {
+      const child = await readFile(
+        resolve(repo, "beautymatch/www/beautymatch/consultation.html"),
+        "utf8",
+      );
+      childContent =
+        child.match(/{% block content %}([\s\S]*?){% endblock %}/)?.[1] || "";
+    }
     const html = (
       await readFile(
         resolve(repo, "beautymatch/templates/beautymatch_app.html"),
@@ -35,7 +49,17 @@ const server = createServer(async (req, res) => {
       )
     )
       .replace("{{ bm_page }}", page)
-      .replace("{{ csrf_token|e }}", "");
+      .replace("{{ csrf_token|e }}", "")
+      .replace(
+        /{% if bm_page[^%]+%}workspace{% else %}app{% endif %}/,
+        ["overview", "customer", "consultation"].includes(page)
+          ? "workspace"
+          : "app",
+      )
+      .replace(
+        /{% block content %}([\s\S]*?){% endblock %}/,
+        (_, fallback) => childContent || fallback,
+      );
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
     res.end(html);
     return;

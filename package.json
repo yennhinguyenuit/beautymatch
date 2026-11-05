@@ -5,8 +5,12 @@
     "dev": "node scripts/preview_frontend.mjs",
     "test": "node --test tests/frontend/*.test.mjs",
     "test:e2e": "playwright test",
-    "format:check": "prettier --check \"beautymatch/public/js/*.mjs\" \"beautymatch/public/css/*.css\" \"tests/frontend/*.mjs\" \"tests/browser/*.mjs\" scripts/preview_frontend.mjs playwright.config.mjs",
-    "check": "node --check beautymatch/public/js/app.mjs && node --check beautymatch/public/js/api.mjs && node --check beautymatch/public/js/components.mjs && node --check beautymatch/public/js/demo-api.mjs"
+    "test:live": "node scripts/verify_live_frontend.mjs",
+    "format:check": "prettier --check \"beautymatch/public/js/*.mjs\" \"beautymatch/public/css/*.css\" \"tests/frontend/*.mjs\" \"tests/browser/*.mjs\" \"scripts/*.mjs\" playwright.config.mjs",
+    "check": "node scripts/check_frontend.mjs",
+    "test:visual": "node scripts/capture_botanical.mjs",
+    "test:crm": "node scripts/verify_crm_visual.mjs --phase after",
+    "test:crm:crud": "node scripts/verify_crm_visual.mjs --phase after --exercise-crud"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

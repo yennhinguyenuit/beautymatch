@@ -5,8 +5,23 @@ import {
   createLiveApi,
   readConsultation,
   feedbackMessage,
+  normalizeRecommendation,
 } from "../../beautymatch/public/js/api.mjs";
-import { safeUrl, escape } from "../../beautymatch/public/js/components.mjs";
+import {
+  safeUrl,
+  escape,
+  dateTime,
+} from "../../beautymatch/public/js/components.mjs";
+
+test("consultation dates respect the server UTC offset and display Vietnam time", () => {
+  assert.equal(
+    dateTime("2026-11-05T05:00:00-07:00"),
+    dateTime("2026-11-05T19:00:00+07:00"),
+  );
+  assert.match(dateTime("2026-11-05T05:00:00-07:00"), /19:00/);
+  assert.equal(dateTime(null), "Chưa có ngày tư vấn");
+  assert.equal(dateTime("bad-date"), "Ngày tư vấn chưa xác định");
+});
 
 const pending = {
   crm_lead: "PRIVATE-LEAD",
@@ -18,6 +33,23 @@ const response = (message) => ({
   ok: true,
   status: 200,
   json: async () => ({ message }),
+});
+test("stored results accept current and previous identifier names including zero products", () => {
+  assert.deepEqual(
+    normalizeRecommendation({ session_id: "S", results: [] }).results,
+    [],
+  );
+  const old = normalizeRecommendation({
+    recommendation_session: "S",
+    results: [{ recommendation_item: "I" }],
+  });
+  assert.equal(old.session_id, "S");
+  assert.equal(old.results[0].item_id, "I");
+  assert.throws(
+    () =>
+      normalizeRecommendation({ message: { session_id: "S", results: [] } }),
+    ApiError,
+  );
 });
 
 test("generation shares in-flight work and retries with the original identifiers", async () => {
@@ -36,10 +68,10 @@ test("generation shares in-flight work and retries with the original identifiers
   const duplicate = api.generate(pending);
   assert.equal(first, duplicate);
   assert.equal(calls.length, 1);
-  resolve(response({ recommendation_session: "SESSION" }));
+  resolve(response({ session_id: "SESSION" }));
   await first;
   const retry = api.generate(pending);
-  resolve(response({ recommendation_session: "SESSION" }));
+  resolve(response({ session_id: "SESSION" }));
   await retry;
   assert.deepEqual(
     calls.map((c) => JSON.parse(c.options.body).request_id),
@@ -68,7 +100,7 @@ test("sensitive reads use POST bridge bodies with no identifiers in URLs", async
     parameters: { crm_lead: "PRIVATE-LEAD", start: 0, limit: 20 },
   });
 });
-test("dashboard sends only date filters; feedback preserves exact existing payload", async () => {
+test("TASK 4 dashboard is all-time; feedback uses canonical field names", async () => {
   const calls = [];
   const api = createLiveApi({
     fetcher: async (url, options) => {
@@ -78,12 +110,16 @@ test("dashboard sends only date filters; feedback preserves exact existing paylo
   });
   await api.dashboard({ start_date: "2026-11-01", end_date: "2026-11-05" });
   const payload = {
-    recommendation_session: "S",
-    recommendation_item: "I",
-    feedback: "Not Interested",
+    session_id: "S",
+    item_id: "I",
+    customer_feedback: "Not Interested",
+    rejection_reason: "Khác",
   };
   await api.feedback(payload);
-  assert.match(calls[0].url, /start_date=2026-11-01/);
+  assert.equal(
+    calls[0].url,
+    "/api/method/beautymatch.api.dashboard.get_dashboard_data",
+  );
   assert.equal(calls[0].options.method, "GET");
   assert.deepEqual(JSON.parse(calls[1].options.body), payload);
 });
@@ -141,31 +177,50 @@ test("consultation handoff rejects invalid data and never creates a new request 
 });
 test("feedback presentation honors exact CREATED, PENDING and current backend task contract", () => {
   assert.equal(
-    feedbackMessage({ customer_feedback: "Interested", status: "CREATED" })
-      .kind,
+    feedbackMessage({
+      customer_feedback: "Interested",
+      follow_up_status: "CREATED",
+    }).kind,
     "success",
   );
   assert.equal(
-    feedbackMessage({ customer_feedback: "Interested", status: "PENDING" })
-      .kind,
+    feedbackMessage({
+      customer_feedback: "Interested",
+      follow_up_status: "PENDING",
+    }).kind,
     "pending",
   );
   assert.match(
     feedbackMessage({
       customer_feedback: "Interested",
-      status: "Follow-up Created",
+      follow_up_status: "CREATED",
       follow_up_task: "TASK",
     }).title,
-    /Follow-up Created/,
+    /CREATED/,
   );
   assert.equal(
     feedbackMessage({
       customer_feedback: "Interested",
-      status: "Feedback Received",
+      follow_up_status: "PENDING",
     }).kind,
     "pending",
   );
   assert.throws(() => feedbackMessage({ status: "CREATED" }), ApiError);
+  assert.equal(
+    feedbackMessage({
+      customer_feedback: "Interested",
+      follow_up_status: "PENDING",
+      follow_up_task: "OLD-CANCELED-TASK",
+    }).kind,
+    "pending",
+  );
+  assert.equal(
+    feedbackMessage({
+      customer_feedback: "Interested",
+      follow_up_task: "OLD-CANCELED-TASK",
+    }).kind,
+    "pending",
+  );
 });
 test("dynamic product content rejects executable URLs and escapes markup", () => {
   for (const url of [

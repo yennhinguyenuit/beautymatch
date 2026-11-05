@@ -1,5 +1,5 @@
 // Explicit demonstration adapter. Never used as a fallback for failed live requests.
-import { ApiError } from "./api.mjs";
+import { ApiError } from "./api.mjs?v=botanical-20261105-v2";
 
 export function createDemoApi({ storage = globalThis.sessionStorage } = {}) {
   let catalog;
@@ -19,7 +19,7 @@ export function createDemoApi({ storage = globalThis.sessionStorage } = {}) {
   function session(products) {
     const count = { empty: 0, one: 1, two: 2, three: 3 }[scenario] ?? 3;
     return {
-      recommendation_session: sessionId,
+      session_id: sessionId,
       crm_lead: "DEMO-LEAD",
       beauty_profile: "DEMO-PROFILE",
       request_id: "00000000-0000-4000-8000-000000000001",
@@ -34,7 +34,7 @@ export function createDemoApi({ storage = globalThis.sessionStorage } = {}) {
       results: products.slice(0, count).map((p, i) => ({
         ...p,
         product: p.name,
-        recommendation_item: `DEMO-ITEM-${i + 1}`,
+        item_id: `DEMO-ITEM-${i + 1}`,
         rank: i + 1,
         final_match_score: [94, 88, 82][i],
         customer_feedback:
@@ -87,15 +87,17 @@ export function createDemoApi({ storage = globalThis.sessionStorage } = {}) {
         );
       const response = {
         ...args,
-        customer_feedback: args.feedback,
-        status:
-          args.feedback === "Interested" ? feedbackState : "Feedback Received",
+        customer_feedback: args.customer_feedback,
+        follow_up_status:
+          args.customer_feedback === "Interested"
+            ? feedbackState
+            : "NOT_APPLICABLE",
         follow_up_task:
-          args.feedback === "Interested" && feedbackState === "CREATED"
+          args.customer_feedback === "Interested" && feedbackState === "CREATED"
             ? "DEMO-TASK"
             : null,
       };
-      saved.set(args.recommendation_item, response);
+      saved.set(args.item_id, response);
       try {
         storage?.setItem(
           "beautymatch_demo_feedback_v1",

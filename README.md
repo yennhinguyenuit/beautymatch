@@ -4,6 +4,13 @@ Personalized Skincare Recommendation for Frappe CRM
 
 Frontend preview and API integration: [BeautyMatch frontend handoff](docs/FRONTEND_HANDOFF.md).
 
+Giao diện CRM dùng chung Botanical Cinema: [tích hợp CRM thật, hướng dẫn build, kiểm thử và rollback](docs/CRM_VISUAL_INTEGRATION.md).
+
+Ứng dụng CRM hoàn chỉnh chạy tại `http://localhost:8000/beautymatch` trên site Frappe hiện có.
+Xem [báo cáo bàn giao tiếng Việt và hướng dẫn demo](docs/BAO_CAO_HOAN_THIEN.md).
+
+Giao diện mới: [BeautyMatch — Botanical Cinema, hình ảnh và kết quả kiểm thử](docs/BOTANICAL_CINEMA.md).
+
 ```bash
 npm ci
 npm run dev

@@ -10,11 +10,14 @@ export const METHODS = Object.freeze({
     "beautymatch.api.recommendation.generate_recommendations",
   get_recommendation_result:
     "beautymatch.api.recommendation.get_recommendation_result",
-  get_customer_history:
-    "beautymatch.api.recommendation.get_consultation_history",
+  get_customer_history: "beautymatch.api.recommendation.get_customer_history",
   submit_feedback: "beautymatch.api.feedback.submit_feedback",
-  get_dashboard_data: "beautymatch.api.frontend.get_dashboard_data",
+  get_dashboard_data: "beautymatch.api.dashboard.get_dashboard_data",
   get_result_context: "beautymatch.api.frontend.get_result_context",
+  get_workspace: "beautymatch.api.frontend.get_workspace",
+  get_customer_context: "beautymatch.api.frontend.get_customer_context",
+  get_customer_view: "beautymatch.api.frontend.get_customer_view",
+  get_scenarios: "beautymatch.scripts.local_demo.get_scenarios",
 });
 
 function serverError(body, status) {
@@ -73,7 +76,8 @@ export function createLiveApi({
           target = "/api/method/beautymatch.api.frontend.read";
           options.method = "POST";
           options.body = JSON.stringify({ operation: key, parameters: args });
-        } else target += `?${new URLSearchParams(args)}`;
+        } else if (Object.keys(args).length)
+          target += `?${new URLSearchParams(args)}`;
         const response = await fetcher(target, options);
         let body;
         try {
@@ -114,13 +118,42 @@ export function createLiveApi({
     mode: "live",
     generate: (args) => call("generate_recommendations", args, "POST"),
     result: (session) =>
-      call("get_recommendation_result", { recommendation_session: session }),
-    context: (session) =>
-      call("get_result_context", { recommendation_session: session }),
+      call("get_recommendation_result", { session_id: session }),
+    context: (session) => call("get_result_context", { session_id: session }),
+    workspace: (search = "", start = 0) =>
+      call("get_workspace", { search, start }, "POST"),
+    customerContext: (lead) =>
+      call("get_customer_context", { crm_lead: lead }, "POST"),
+    customerView: (lead, start = 0) =>
+      call("get_customer_view", { crm_lead: lead, start }, "POST"),
+    scenarios: () => call("get_scenarios", {}, "POST"),
     history: (lead, start = 0) =>
       call("get_customer_history", { crm_lead: lead, start, limit: 20 }),
     feedback: (args) => call("submit_feedback", args, "POST"),
-    dashboard: (args) => call("get_dashboard_data", args),
+    // TASK 4 get_dashboard_data() is all-time and accepts no date arguments.
+    dashboard: () => call("get_dashboard_data"),
+  };
+}
+
+export function normalizeRecommendation(value) {
+  if (!value || typeof value !== "object")
+    throw new ApiError("Máy chủ chưa trả kết quả tư vấn hợp lệ.");
+  const session_id = value.session_id || value.recommendation_session;
+  if (
+    typeof session_id !== "string" ||
+    !session_id ||
+    !Array.isArray(value.results)
+  )
+    throw new ApiError(
+      "Kết quả API thiếu phiên tư vấn hoặc danh sách sản phẩm. Vui lòng tải lại trang.",
+    );
+  return {
+    ...value,
+    session_id,
+    results: value.results.map((item) => ({
+      ...item,
+      item_id: item.item_id || item.recommendation_item,
+    })),
   };
 }
 
@@ -165,21 +198,21 @@ export function feedbackMessage(data) {
       title: "Đã ghi nhận phản hồi",
       text: "Cảm ơn bạn đã chia sẻ. Bạn có thể tiếp tục khám phá những gợi ý còn lại.",
     };
-  if (data.status === "PENDING")
+  if (data.follow_up_status === "PENDING")
     return {
       kind: "pending",
       title: "PENDING · Đang chờ xử lý",
-      text: "Đã ghi nhận sự quan tâm. Yêu cầu theo dõi đang chờ xử lý.",
+      text: "Đã ghi nhận sự quan tâm. Công việc chăm sóc đang chờ phân công hoặc xử lý trong CRM.",
     };
-  if (data.status === "CREATED" || data.follow_up_task)
+  if (data.follow_up_status === "CREATED")
     return {
       kind: "success",
-      title: `${data.status} · Đã tạo lịch theo dõi`,
-      text: "Đã ghi nhận sự quan tâm. Nhân viên CRM sẽ tiếp tục hỗ trợ bạn.",
+      title: "CREATED · Đã tạo lịch theo dõi",
+      text: `Đã ghi nhận sự quan tâm. Nhân viên CRM sẽ tiếp tục hỗ trợ bạn.${data.follow_up_task ? ` CRM Task: ${data.follow_up_task}.` : ""}`,
     };
   return {
     kind: "pending",
-    title: `${data.status || "Đã ghi nhận"}`,
+    title: "Đã ghi nhận sự quan tâm",
     text: "Đã ghi nhận sự quan tâm. Máy chủ chưa xác nhận lịch theo dõi.",
   };
 }
