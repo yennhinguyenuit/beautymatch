@@ -11,6 +11,22 @@ from beautymatch.api.recommendation import (
     PROFILE_CHANGED,
     generate_recommendations,
 )
+from beautymatch.api.profile import save_beauty_profile
+
+
+def create_consultation_fixture():
+    """Create isolated fixtures in FrappeTestCase's rolled-back transaction."""
+    return save_beauty_profile({
+        "full_name": "BeautyMatch TASK4 regression",
+        "email": f"task4-{uuid4().hex}@example.invalid",
+        "skin_type": "OILY",
+        "sensitivity": "Sensitive",
+        "concern_acne": 1,
+        "requested_category": "CLEANSER",
+        "max_budget": 500000,
+        "consent": 1,
+        "request_id": str(uuid4()),
+    })
 
 
 class TestTask4GenerateAPI(FrappeTestCase):
@@ -19,8 +35,9 @@ class TestTask4GenerateAPI(FrappeTestCase):
     def setUp(self):
         super().setUp()
 
-        self.crm_lead = "CRM-LEAD-2026-00002"
-        self.beauty_profile = "icqe0sh0e2"
+        fixture = create_consultation_fixture()
+        self.crm_lead = fixture["crm_lead"]
+        self.beauty_profile = fixture["beauty_profile"]
 
         self.assertTrue(
             frappe.db.exists("CRM Lead", self.crm_lead),
@@ -135,8 +152,9 @@ class TestTask4FeedbackAPI(FrappeTestCase):
     def setUp(self):
         super().setUp()
 
-        self.crm_lead = "CRM-LEAD-2026-00002"
-        self.beauty_profile = "icqe0sh0e2"
+        fixture = create_consultation_fixture()
+        self.crm_lead = fixture["crm_lead"]
+        self.beauty_profile = fixture["beauty_profile"]
 
         product = frappe.db.get_value(
             "Product Profile",
@@ -147,7 +165,7 @@ class TestTask4FeedbackAPI(FrappeTestCase):
 
         assignee = frappe.db.get_value(
             "User",
-            {"enabled": 1, "name": "beautymatch.sales.test@example.com"},
+            {"enabled": 1, "name": "Administrator"},
             "name",
         )
         self.assertTrue(assignee, "Thiếu user assignee fixture.")

@@ -1,0 +1,38 @@
+[
+  {
+    "product_code": "HASAKI-SER-001",
+    "source_url": "https://media.hcdn.vn/catalog/product/o/g/og-image-auto-serum-caryophy-giam-mun-mo-tham-se-lo-chan-long-30ml_mTyYxtDiDoZZpPDY.png",
+    "local_url": "/assets/beautymatch/images/catalog/HASAKI-SER-001.png",
+    "sha256": "94b9d1c811bfaed132764dccf31bb9ca4b7407034d507f61b40836eb51e64518",
+    "display_crop": {
+      "x": 196,
+      "y": 65,
+      "width": 235,
+      "height": 545
+    }
+  },
+  {
+    "product_code": "HASAKI-SER-008",
+    "source_url": "https://media.hcdn.vn/catalog/product/o/g/og-image-auto-tinh-chat-bi-dao-cocoon-lam-giam-mun-mo-tham-70ml-moi_uyuEkXvHW7ehee5e.png",
+    "local_url": "/assets/beautymatch/images/catalog/HASAKI-SER-008.png",
+    "sha256": "98a10c2fb0f637aa452c301e0ae40ac24a091ff39bfb26f8483b2a2ee38251ca",
+    "display_crop": {
+      "x": 178,
+      "y": 207,
+      "width": 115,
+      "height": 312
+    }
+  },
+  {
+    "product_code": "HASAKI-TON-009",
+    "source_url": "https://media.hcdn.vn/catalog/product/o/g/og-image-auto-nuoc-hoa-hong-khong-mui-klairs-danh-cho-da-nhay-cam-180ml_qiCkR78L7X1YPyZW.png",
+    "local_url": "/assets/beautymatch/images/catalog/HASAKI-TON-009.png",
+    "sha256": "0e3c10ca2af269ea201c507c66cbff0d546926401f9d886154b92fb0fbfb4137",
+    "display_crop": {
+      "x": 102,
+      "y": 208,
+      "width": 130,
+      "height": 324
+    }
+  }
+]
