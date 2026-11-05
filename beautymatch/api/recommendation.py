@@ -34,6 +34,20 @@ SCORE_FIELDS = (
 )
 
 
+class PROFILE_CHANGED(frappe.ValidationError):
+    """The Beauty Profile changed after the consultation was submitted."""
+
+    http_status_code = 409
+    error_code = "PROFILE_CHANGED"
+
+
+def _profile_changed():
+    frappe.throw(
+        "Hồ sơ đã thay đổi; vui lòng thực hiện yêu cầu tư vấn mới.",
+        exc=PROFILE_CHANGED,
+    )
+
+
 def _invalid(message):
     frappe.throw(message, exc=frappe.ValidationError)
 
@@ -41,7 +55,7 @@ def _invalid(message):
 def _serialize_session(session):
     """Read stored snapshot; do not recompute on retries."""
     return {
-        "recommendation_session": session.name,
+        "session_id": session.name,
         "crm_lead": session.crm_lead,
         "beauty_profile": session.beauty_profile,
         "request_id": session.request_id,
@@ -54,12 +68,14 @@ def _serialize_session(session):
         "result_message": session.result_message,
         "results": [
             {
-                "recommendation_item": item.name,
+                "item_id": item.name,
                 **{field: item.get(field) for field in SCORE_FIELDS},
                 "product_code": item.product_code_snapshot,
                 "product_name": item.product_name_snapshot,
                 "brand": item.brand_snapshot,
                 "price": item.price_snapshot,
+                "image_url": item.image_url_snapshot or "",
+                "product_url": item.product_url_snapshot or "",
                 "customer_feedback": item.customer_feedback,
             }
             for item in session.recommendation_items
@@ -97,7 +113,6 @@ def generate_recommendations(crm_lead, beauty_profile, request_id, profile_versi
     if (
         submission.crm_lead != crm_lead
         or submission.beauty_profile != beauty_profile
-        or submission.profile_version != profile_version
     ):
         _invalid("Thông tin không khớp với yêu cầu tư vấn ban đầu.")
 
@@ -112,11 +127,24 @@ def generate_recommendations(crm_lead, beauty_profile, request_id, profile_versi
             _invalid("request_id đã thuộc phiên tư vấn khác.")
         return _serialize_session(session)
 
+    if str(submission.profile_version) != profile_version:
+        _profile_changed()
+
+    # Lock the profile row until transaction commit/rollback.
+    # This coordinates with _save_profile(), which also uses FOR UPDATE.
+    locked_profiles = frappe.db.sql(
+        "SELECT name FROM `tabBeauty Profile` WHERE name = %s FOR UPDATE",
+        (beauty_profile,),
+        as_dict=True,
+    )
+    if not locked_profiles:
+        _invalid("Không tìm thấy Beauty Profile.")
+
     profile = frappe.get_doc("Beauty Profile", beauty_profile)
     if profile.crm_lead != crm_lead or profile.status != "Active" or not profile.consent:
         _invalid("Hồ sơ không hợp lệ hoặc chưa có đồng ý lưu thông tin.")
     if str(profile.modified) != profile_version:
-        _invalid("Hồ sơ đã thay đổi; vui lòng thực hiện yêu cầu tư vấn mới.")
+        _profile_changed()
 
     snapshot = {field: profile.get(field) for field in PROFILE_FIELDS}
     settings = frappe.get_doc("BeautyMatch Settings")
@@ -156,8 +184,17 @@ def generate_recommendations(crm_lead, beauty_profile, request_id, profile_versi
             "product_name_snapshot": product.product_name,
             "brand_snapshot": product.brand,
             "price_snapshot": product.price,
+            "image_url_snapshot": product.image_url or "",
+            "product_url_snapshot": product.product_url or "",
             "customer_feedback": "None",
         })
+    # Recheck profile version immediately before persisting the session.
+    current_version = frappe.db.get_value(
+        "Beauty Profile", beauty_profile, "modified"
+    )
+    if str(current_version) != profile_version:
+        _profile_changed()
+
     # Recommendation DocTypes have no staff permissions; access was
     # explicitly authorized through the linked CRM Lead above.
     session.insert(ignore_permissions=True)
@@ -165,18 +202,18 @@ def generate_recommendations(crm_lead, beauty_profile, request_id, profile_versi
 
 
 @frappe.whitelist(methods=["GET"])
-def get_recommendation_result(recommendation_session):
+def get_recommendation_result(session_id):
     """Return a stored recommendation after checking its CRM Lead access."""
     _check_consultation_role()
-    if not isinstance(recommendation_session, str) or not recommendation_session.strip():
-        _invalid("Thiếu recommendation_session.")
-    session = frappe.get_doc("Recommendation Session", recommendation_session.strip())
+    if not isinstance(session_id, str) or not session_id.strip():
+        _invalid("Thiếu session_id.")
+    session = frappe.get_doc("Recommendation Session", session_id.strip())
     _check_lead_access(session.crm_lead)
     return _serialize_session(session)
 
 
 @frappe.whitelist(methods=["GET"])
-def get_consultation_history(crm_lead, limit=20, start=0):
+def get_customer_history(crm_lead, limit=20, start=0):
     """List stored consultations for one authorized CRM Lead, newest first."""
     _check_consultation_role()
     if not isinstance(crm_lead, str) or not crm_lead.strip():
