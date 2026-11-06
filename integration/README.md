@@ -9,7 +9,7 @@
 - Toàn bộ Vue components, store, API adapter, validation và CSS nằm trong repository BeautyMatch tại `frontend/crm/`.
 - Patch host nằm ở repository CRM **riêng** trong container `/home/frappe/frappe-bench/apps/crm`; không được commit/push theo repository BeautyMatch. Container hiện không bind mount source CRM ra Windows; recreate container có thể mất patch nếu không áp dụng lại trong quy trình build.
 
-Patch reviewable: [crm-1.86.0-beautymatch.patch](crm-1.86.0-beautymatch.patch). Script từ chối version/anchor khác và lưu bản gốc/hashes trong `test-results/native-crm-patch/`; các thay đổi CRM có sẵn ngoài bốn file này được giữ nguyên.
+Patch reviewable: [crm-1.86.0-beautymatch.patch](crm-1.86.0-beautymatch.patch). Script từ chối version/anchor khác và lưu bản gốc/hashes trong `.local/crm-native-patch/` trên host bind mount; chuyển backup cũ từ `test-results/` nếu cần. Các thay đổi CRM có sẵn ngoài bốn file được giữ nguyên. Đúng baseline có thể tái áp dụng sau dựng lại container mà không ghi đè backup; khác baseline sẽ bị từ chối. Xem [bộ demo seminar và script triển khai đã kiểm thử](../docs/DEMO_SEMINAR_READY.md).
 
 ```powershell
 docker exec crm-frappe-1 python /workspace/beautymatch/scripts/crm_native_patch.py --check

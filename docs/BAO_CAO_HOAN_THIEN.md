@@ -1,5 +1,7 @@
 # BeautyMatch — bàn giao tích hợp CRM
 
+> Bàn giao seminar mới nhất: [DEMO_SEMINAR_READY.md](DEMO_SEMINAR_READY.md). Đã có portal khách, queue native và Task CREATED với assignee demo; các giới hạn PENDING bên dưới thuộc trạng thái trước.
+
 Ngày kiểm tra: 05/11/2026. Nhánh: `feat/recommendation-ui`. Thay đổi nằm trong working tree; không commit, push, merge hay tạo PR. Chạy trên repository hiện có, Frappe 15.121.3 / Frappe CRM 1.86, container `crm-frappe-1`, site `crm.localhost`.
 
 ## 1. Audit và checklist triển khai

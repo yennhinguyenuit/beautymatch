@@ -2,6 +2,8 @@
 
 Personalized Skincare Recommendation for Frappe CRM
 
+**Demo seminar:** [hướng dẫn đầy đủ, tài khoản, dataset, kịch bản 7 phút và bằng chứng](docs/DEMO_SEMINAR_READY.md). Khách dùng `/beautymatch/portal`; nhân viên dùng `/crm/beautymatch/requests`. Chuẩn bị local: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prepare_seminar.ps1`.
+
 **Module CRM native:** mở `http://localhost:8000/crm/beautymatch` trong cùng Vue SPA, sidebar và layout Frappe CRM. Xem [bàn giao native, file thay đổi, bản vá host, build và kiểm thử thật](docs/CRM_NATIVE_INTEGRATION.md).
 
 Frontend preview and API integration: [BeautyMatch frontend handoff](docs/FRONTEND_HANDOFF.md).

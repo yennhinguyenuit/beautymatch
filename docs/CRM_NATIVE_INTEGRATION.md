@@ -1,5 +1,7 @@
 # BeautyMatch native trong Frappe CRM
 
+> Cập nhật seminar: đã có portal khách, queue tiếp nhận và assignee để UI tạo Task CREATED. Backup patch chuyển sang `.local/crm-native-patch/`. Xem [DEMO_SEMINAR_READY.md](DEMO_SEMINAR_READY.md) cho trạng thái/kiểm thử mới nhất; ghi chú PENDING hoặc chưa có portal bên dưới thuộc bàn giao trước.
+
 Bàn giao ngày 06/11/2026 trên nhánh `develop`. Đã triển khai trực tiếp vào Docker local, không commit, push, merge hoặc đổi nhánh.
 
 ## Kết quả

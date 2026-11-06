@@ -12,6 +12,7 @@ export const beautyMatchNavigationItem = {
 export const hasBeautyMatchAccess = () => nativeAccess.allowed;
 const sections = new Set([
   "",
+  "requests",
   "consultation",
   "customer",
   "result",

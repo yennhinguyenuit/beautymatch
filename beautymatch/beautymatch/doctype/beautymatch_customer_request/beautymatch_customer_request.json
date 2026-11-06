@@ -1,0 +1,98 @@
+{
+  "doctype": "DocType",
+  "name": "BeautyMatch Customer Request",
+  "module": "BeautyMatch",
+  "autoname": "field:request_id",
+  "engine": "InnoDB",
+  "track_changes": 1,
+  "field_order": [
+    "request_id",
+    "customer",
+    "crm_lead",
+    "beauty_profile",
+    "profile_version",
+    "status",
+    "assigned_to",
+    "recommendation_session",
+    "payload_hash",
+    "payload_json"
+  ],
+  "fields": [
+    {
+      "fieldname": "request_id",
+      "fieldtype": "Data",
+      "label": "Request ID",
+      "reqd": 1,
+      "unique": 1
+    },
+    {
+      "fieldname": "customer",
+      "fieldtype": "Link",
+      "options": "User",
+      "label": "Customer",
+      "reqd": 1
+    },
+    {
+      "fieldname": "crm_lead",
+      "fieldtype": "Link",
+      "options": "CRM Lead",
+      "label": "CRM Lead",
+      "reqd": 1
+    },
+    {
+      "fieldname": "beauty_profile",
+      "fieldtype": "Link",
+      "options": "Beauty Profile",
+      "label": "Beauty Profile",
+      "reqd": 1
+    },
+    {
+      "fieldname": "profile_version",
+      "fieldtype": "Data",
+      "label": "Submitted Profile Version",
+      "reqd": 1
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "Status",
+      "options": "Pending\nIn Progress\nCompleted\nSuperseded",
+      "default": "Pending",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "assigned_to",
+      "fieldtype": "Link",
+      "options": "User",
+      "label": "Accepted By"
+    },
+    {
+      "fieldname": "recommendation_session",
+      "fieldtype": "Link",
+      "options": "Recommendation Session",
+      "label": "Recommendation Session"
+    },
+    {
+      "fieldname": "payload_hash",
+      "fieldtype": "Data",
+      "label": "Payload Hash",
+      "reqd": 1
+    },
+    {
+      "fieldname": "payload_json",
+      "fieldtype": "Long Text",
+      "label": "Submitted Snapshot",
+      "reqd": 1
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1
+    }
+  ]
+}

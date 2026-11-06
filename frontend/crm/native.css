@@ -385,6 +385,10 @@ html[data-theme="dark"] .bm-native-product-image img {
 	flex-wrap: wrap;
 	margin-top: 26px;
 }
+.bm-native-request-list {
+	display: grid;
+	gap: 20px;
+}
 html[data-theme="dark"] .bm-native-concern-layout {
 	--bm-chart-lift: 40%;
 }

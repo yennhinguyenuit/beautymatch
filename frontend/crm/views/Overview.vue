@@ -44,6 +44,16 @@ onMounted(() => load());
 			@click="open('', 'consultation')"
 		/>
 	</div>
+	<div class="bm-native-panel bm-native-section-heading" style="margin-bottom: 24px">
+		<div>
+			<h2>Hồ sơ khách hàng gửi</h2>
+			<p>Tiếp nhận yêu cầu mới và bắt đầu tư vấn trên đúng CRM Lead.</p>
+		</div>
+		<Button
+			label="Mở yêu cầu tư vấn"
+			@click="router.push({ name: 'BeautyMatch', params: { section: 'requests' } })"
+		/>
+	</div>
 	<form class="bm-native-toolbar" @submit.prevent="load(0)">
 		<FormControl
 			v-model="search"

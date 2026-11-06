@@ -10,6 +10,7 @@ import Consultation from "./views/Consultation.vue";
 import Results from "./views/Results.vue";
 import Customer from "./views/Customer.vue";
 import Analytics from "./views/Analytics.vue";
+import Requests from "./views/Requests.vue";
 import "./native.css";
 
 const route = useRoute();
@@ -18,6 +19,7 @@ const store = useBeautyMatch();
 store.syncSelection();
 const tabs = [
 	["", "Tổng quan"],
+	["requests", "Yêu cầu tư vấn"],
 	["consultation", "Phiên tư vấn"],
 	["customer", "Hồ sơ da"],
 	["feedback", "Phản hồi khách hàng"],
@@ -33,6 +35,7 @@ const view = computed(
 	() =>
 		({
 			"": Overview,
+			requests: Requests,
 			consultation: Consultation,
 			result: Results,
 			customer: Customer,

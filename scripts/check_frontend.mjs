@@ -12,6 +12,8 @@ files.push(
   "scripts/verify_crm_sidebar.mjs",
   "scripts/verify_crm_native.mjs",
   "scripts/verify_crm_task.mjs",
+  "scripts/verify_seminar.mjs",
+  "frontend/crm/portal-api.mjs",
   "frontend/crm/integration.mjs",
   "frontend/crm/store.mjs",
   "frontend/crm/domain.mjs",

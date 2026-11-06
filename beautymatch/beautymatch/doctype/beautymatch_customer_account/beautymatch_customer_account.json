@@ -1,0 +1,36 @@
+{
+  "doctype": "DocType",
+  "name": "BeautyMatch Customer Account",
+  "module": "BeautyMatch",
+  "autoname": "hash",
+  "engine": "InnoDB",
+  "track_changes": 1,
+  "field_order": ["user", "crm_lead"],
+  "fields": [
+    {
+      "fieldname": "user",
+      "fieldtype": "Link",
+      "options": "User",
+      "label": "Customer User",
+      "reqd": 1,
+      "unique": 1
+    },
+    {
+      "fieldname": "crm_lead",
+      "fieldtype": "Link",
+      "options": "CRM Lead",
+      "label": "CRM Lead",
+      "reqd": 1,
+      "unique": 1
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1
+    }
+  ]
+}

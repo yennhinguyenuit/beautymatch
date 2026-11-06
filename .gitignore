@@ -9,3 +9,4 @@ __pycache__
 /data/simulated/customer_seed_mapping.csv
 /test-results/
 /playwright-report/
+/.local/

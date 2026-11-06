@@ -9,6 +9,7 @@ import argparse
 import difflib
 import hashlib
 import json
+import shutil
 from pathlib import Path
 
 
@@ -52,13 +53,22 @@ def main():
 	parser.add_argument("--apply", action="store_true")
 	parser.add_argument("--rollback", action="store_true")
 	parser.add_argument("--check", action="store_true")
+	parser.add_argument("--backup-dir", default=str(APP / ".local/crm-native-patch"))
 	args = parser.parse_args()
 	root = Path(args.crm_root).resolve(strict=True)
 	if not (root / "crm/__init__.py").is_file() or not (root / ".git").exists():
 		raise ValueError("Expected a real CRM repository.")
 	if '__version__ = "1.86.0"' not in (root / "crm/__init__.py").read_text():
 		raise ValueError("This bridge was reviewed for CRM 1.86.0 only. Review upstream before applying.")
-	backup = APP / "test-results/native-crm-patch"
+	backup = Path(args.backup_dir).resolve()
+	if not backup.is_relative_to((APP / ".local").resolve()):
+		raise ValueError("Backup must stay inside BeautyMatch .local/.")
+	legacy_backup = APP / "test-results/native-crm-patch"
+	if backup == (APP / ".local/crm-native-patch").resolve() and not backup.exists() and (legacy_backup / "manifest.json").is_file():
+		# Preserve backups from the earlier integration outside disposable test
+		# output. No host source or unrelated customization is changed here.
+		backup.parent.mkdir(parents=True, exist_ok=True)
+		shutil.copytree(legacy_backup, backup)
 	manifest_path = backup / "manifest.json"
 	sha = lambda text: hashlib.sha256(text.encode()).hexdigest()
 	if args.rollback:
@@ -85,18 +95,27 @@ def main():
 	patch_path.parent.mkdir(parents=True, exist_ok=True)
 	patch_path.write_text(patch)
 	if args.apply:
+		reuse_backup = False
 		if manifest_path.exists():
-			raise ValueError("A prior backup exists; inspect it before replacing CRM sources.")
+			manifest = json.loads(manifest_path.read_text())
+			reuse_backup = manifest.get("crm_root") == str(root) and set(manifest.get("files", {})) == set(FILES) and all(
+				sha(before[name]) == manifest["files"][name]["before"]
+				and sha((backup / name).read_text()) == manifest["files"][name]["before"]
+				and sha(after[name]) == manifest["files"][name]["after"] for name in FILES
+			)
+			if not reuse_backup:
+				raise ValueError("Prior backup differs from this host baseline. Review it before changing CRM.")
 		for name in FILES:
 			target = (root / name).resolve(strict=True)
 			if not target.is_relative_to(root):
 				raise ValueError("CRM target escaped the verified repository.")
 		backup.mkdir(parents=True, exist_ok=True)
-		for name in FILES:
-			original = backup / name
-			original.parent.mkdir(parents=True, exist_ok=True)
-			original.write_text(before[name])
-		manifest_path.write_text(json.dumps({"crm_root": str(root), "crm_version": "1.86.0", "files": {name: {"before": sha(before[name]), "after": sha(after[name])} for name in FILES}}, indent=2))
+		if not reuse_backup:
+			for name in FILES:
+				original = backup / name
+				original.parent.mkdir(parents=True, exist_ok=True)
+				original.write_text(before[name])
+			manifest_path.write_text(json.dumps({"crm_root": str(root), "crm_version": "1.86.0", "files": {name: {"before": sha(before[name]), "after": sha(after[name])} for name in FILES}}, indent=2))
 		for name in FILES:
 			(root / name).write_text(after[name])
 	print(json.dumps({"applied": args.apply, "files": FILES, "patch": str(patch_path), "added_lines": sum(line.startswith('+') and not line.startswith('+++') for line in patch.splitlines())}))

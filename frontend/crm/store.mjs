@@ -5,6 +5,7 @@ import {
   normalizeRecommendation,
 } from "../../beautymatch/public/js/api.mjs";
 import { normalizeIntake } from "./domain.mjs";
+import { portalCall } from "./portal-api.mjs";
 
 function read(key) {
   try {
@@ -33,6 +34,7 @@ export const useBeautyMatch = defineStore("beautymatch-native", () => {
 
   function selectLead(lead) {
     if (lead !== selected.value) {
+      sessionStorage.removeItem("beautymatch_staff_request_v1");
       result.value = null;
       resultContext.value = null;
       customer.value = null;
@@ -141,6 +143,14 @@ export const useBeautyMatch = defineStore("beautymatch-native", () => {
       return;
     }
     resultContext.value = await api.context(result.value.session_id);
+    const handoff = read("beautymatch_staff_request_v1");
+    if (handoff?.crm_lead === selected.value && handoff.request_id) {
+      await portalCall("complete_request", {
+        request_id: handoff.request_id,
+        session_id: result.value.session_id,
+      });
+      sessionStorage.removeItem("beautymatch_staff_request_v1");
+    }
   }
   function openSession(session) {
     selectLead(session.crm_lead || selected.value);

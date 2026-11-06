@@ -257,6 +257,8 @@ app_license = "mit"
 
 # BeautyMatch CRM integrations
 doctype_js = {"CRM Lead": "public/js/crm_lead.js"}
-after_install = "beautymatch.config.integration.install"
-after_migrate = ["beautymatch.config.integration.install"]
+after_install = ["beautymatch.config.integration.install", "beautymatch.config.portal.install"]
+after_migrate = ["beautymatch.config.integration.install", "beautymatch.config.portal.install"]
 page_renderer = ["beautymatch.website.crm_renderer.BeautyMatchCRMPage"]
+before_request = ["beautymatch.api.portal.restrict_customer_crm"]
+role_home_page = {"BeautyMatch Customer": "/beautymatch/portal"}
