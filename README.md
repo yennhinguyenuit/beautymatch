@@ -2,11 +2,15 @@
 
 Personalized Skincare Recommendation for Frappe CRM
 
+**Module CRM native:** mở `http://localhost:8000/crm/beautymatch` trong cùng Vue SPA, sidebar và layout Frappe CRM. Xem [bàn giao native, file thay đổi, bản vá host, build và kiểm thử thật](docs/CRM_NATIVE_INTEGRATION.md).
+
 Frontend preview and API integration: [BeautyMatch frontend handoff](docs/FRONTEND_HANDOFF.md).
 
 Giao diện CRM dùng chung Botanical Cinema: [tích hợp CRM thật, hướng dẫn build, kiểm thử và rollback](docs/CRM_VISUAL_INTEGRATION.md).
 
-Ứng dụng CRM hoàn chỉnh chạy tại `http://localhost:8000/beautymatch` trên site Frappe hiện có.
+Mục BeautyMatch dưới Dashboard: [cơ chế sidebar, phân quyền, kiểm thử và ảnh thực tế](docs/CRM_SIDEBAR_INTEGRATION.md).
+
+Các trang website tương thích vẫn chạy tại `http://localhost:8000/beautymatch`; điểm vào từ CRM hiện dùng `/crm/beautymatch`.
 Xem [báo cáo bàn giao tiếng Việt và hướng dẫn demo](docs/BAO_CAO_HOAN_THIEN.md).
 
 Giao diện mới: [BeautyMatch — Botanical Cinema, hình ảnh và kết quả kiểm thử](docs/BOTANICAL_CINEMA.md).

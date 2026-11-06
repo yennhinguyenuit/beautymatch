@@ -1,0 +1,103 @@
+--- a/frontend/vite.config.js
++++ b/frontend/vite.config.js
+@@ -2,11 +2,13 @@
+ import vue from '@vitejs/plugin-vue'
+ import vueJsx from '@vitejs/plugin-vue-jsx'
+ import path from 'path'
++import { realpathSync } from 'node:fs'
+ import { VitePWA } from 'vite-plugin-pwa'
+ 
+ // https://vitejs.dev/config/
+ export default defineConfig(async ({ mode }) => {
+   const isDev = mode === 'development'
++  const beautyMatchRoot = realpathSync(path.resolve(import.meta.dirname, '../../beautymatch'))
+   const config = {
+     plugins: [
+       vue(),
+@@ -58,6 +60,7 @@
+     resolve: {
+       alias: {
+         '@': path.resolve(import.meta.dirname, 'src'),
++        '@beautymatch': path.join(beautyMatchRoot, 'frontend/crm'),
+         // point at the package src dir (not index.ts) so subpath imports like
+         // `@framework/ui/components/Notifications` resolve. Importing subpaths avoids the
+         // barrel, which `export *`s components (Grid/Phone/FormLayout) that need a newer
+@@ -79,6 +82,7 @@
+       dedupe: [
+         'vue',
+         'vue-router',
++        'pinia',
+         'frappe-ui',
+         'dompurify',
+         // ConditionBuilder's drag handles; resolved from the host for the same reason
+@@ -106,7 +110,7 @@
+       fs: {
+         // allow the bench `apps/` dir so Vite can serve linked local packages
+         // (frappe-ui, @framework/ui) that live in sibling app repos
+-        allow: [path.resolve(import.meta.dirname, '../..')],
++        allow: [path.resolve(import.meta.dirname, '../..'), beautyMatchRoot],
+       },
+     },
+   }
+--- a/frontend/src/router.js
++++ b/frontend/src/router.js
+@@ -1,4 +1,5 @@
+ import { createRouter, createWebHistory } from 'vue-router'
++import { installBeautyMatchRoutes } from '@beautymatch/integration.mjs'
+ import { call } from 'frappe-ui'
+ import { usersStore } from '@/stores/users'
+ import { sessionStore } from '@/stores/session'
+@@ -318,4 +319,6 @@
+   }
+ })
+ 
++installBeautyMatchRoutes(router, { isLoggedIn: () => sessionStore().isLoggedIn })
++
+ export default router
+--- a/frontend/src/utils/navigation.js
++++ b/frontend/src/utils/navigation.js
+@@ -7,6 +7,7 @@
+ import TaskIcon from '@/components/Icons/TaskIcon.vue'
+ import LucideLayoutDashboard from '~icons/lucide/layout-dashboard'
+ import router from '@/router'
++import { beautyMatchNavigationItem, hasBeautyMatchAccess } from '@beautymatch/integration.mjs'
+ 
+ export const navigationItems = [
+   {
+@@ -15,6 +16,7 @@
+     route: 'Dashboard',
+     desktopOnly: true,
+   },
++  beautyMatchNavigationItem,
+   { label: 'Leads', icon: LeadsIcon, route: 'Leads' },
+   { label: 'Deals', icon: DealsIcon, route: 'Deals' },
+   { label: 'Contacts', icon: ContactsIcon, route: 'Contacts' },
+@@ -26,6 +28,7 @@
+ 
+ export function getNavigationItems({ mobile = false } = {}) {
+   return navigationItems.filter(
+-    (item) => router.hasRoute(item.route) && (!mobile || !item.desktopOnly),
++    (item) => router.hasRoute(item.route) && (!mobile || !item.desktopOnly) &&
++      (item.route !== 'BeautyMatch' || hasBeautyMatchAccess()),
+   )
+ }
+--- a/frontend/src/components/Layouts/AppSidebar.vue
++++ b/frontend/src/components/Layouts/AppSidebar.vue
+@@ -251,7 +251,7 @@
+ const isFCSite = ref(window.is_fc_site)
+ const isDemoSite = ref(window.is_demo_site)
+ 
+-const links = getNavigationItems({ mobile: props.mobile })
++const links = computed(() => getNavigationItems({ mobile: props.mobile }))
+ 
+ const allViews = computed(() => {
+   let _views = [
+@@ -259,7 +259,7 @@
+       name: 'All Views',
+       hideLabel: true,
+       opened: true,
+-      views: links.map((link) => ({
++      views: links.value.map((link) => ({
+         label: link.label,
+         icon: link.icon,
+         key: link.route,

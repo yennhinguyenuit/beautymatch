@@ -2,7 +2,7 @@
 class CRMLead {
 	async onLoad() {
 		if (!this.doc?.name || this.doc.__islocal) return;
-		const go = (path) => {
+		const go = (section) => {
 			sessionStorage.setItem(
 				"beautymatch_customer_v1",
 				JSON.stringify({ crm_lead: this.doc.name }),
@@ -10,15 +10,20 @@ class CRMLead {
 			sessionStorage.removeItem("beautymatch_open_session_v1");
 			sessionStorage.removeItem("beautymatch_intake_retry_v1");
 			sessionStorage.removeItem("beautymatch_sample_profile_v1");
-			window.location.assign(path);
+			if (this.router?.hasRoute("BeautyMatch")) {
+				this.router.push({ name: "BeautyMatch", params: { section } });
+			} else
+				this.toast?.error(
+					"Module Vue BeautyMatch chưa được build vào CRM. Vui lòng liên hệ quản trị viên.",
+				);
 		};
 		const actions = [
-			{ label: "Tư vấn với BeautyMatch", onClick: () => go("/beautymatch/consultation") },
+			{ label: "Tư vấn với BeautyMatch", onClick: () => go("consultation") },
 			{
 				group: "BeautyMatch",
 				buttonLabel: "BeautyMatch",
 				items: [
-					{ label: "Hồ sơ & lịch sử", onClick: () => go("/beautymatch/customer") },
+					{ label: "Hồ sơ & lịch sử", onClick: () => go("customer") },
 					{ label: "Làm mới BeautyMatch", onClick: () => this.refreshBeautyMatch() },
 				],
 			},
@@ -45,7 +50,7 @@ class CRMLead {
 		);
 		try {
 			const [{ renderCRMInsights }, data] = await Promise.all([
-				import("/assets/beautymatch/js/crm-insights.mjs?v=crm-botanical-20261105"),
+				import("/assets/beautymatch/js/crm-insights.mjs?v=crm-native-20261106"),
 				this.call("beautymatch.api.frontend.get_customer_view", { crm_lead: lead }),
 			]);
 			if (this.doc.name === lead)

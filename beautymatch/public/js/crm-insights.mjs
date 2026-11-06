@@ -41,7 +41,7 @@ const states = {
 };
 const empty = (text) => `<p class="bm-crm-empty">${escape(text)}</p>`;
 const action = (lead, type, label, primary = false) =>
-  `<a class="bm-crm-button${primary ? " bm-crm-button--primary" : ""}" data-bm-action="${type}" data-bm-lead="${escape(lead)}" href="/beautymatch/${type === "consultation" ? "consultation" : "customer"}">${label}</a>`;
+  `<a class="bm-crm-button${primary ? " bm-crm-button--primary" : ""}" data-bm-action="${type}" data-bm-lead="${escape(lead)}" href="/crm/beautymatch/${type === "consultation" ? "consultation" : "customer"}">${label}</a>`;
 export function renderCRMInsights(data) {
   if (
     !data?.customer?.crm_lead ||
@@ -67,9 +67,9 @@ export function renderCRMInsights(data) {
   ];
   const taskLink = (task) =>
     /^\/app\/crm-task\/[^/?#]+$/.test(task.url || "")
-      ? `<a href="${escape(task.url)}">CRM Task ${escape(task.name)}</a>`
+      ? `<a data-bm-task="${escape(task.name)}" href="/crm/tasks/view/list?open=${encodeURIComponent(task.name)}">CRM Task ${escape(task.name)}</a>`
       : `CRM Task ${escape(task.name)}`;
-  return `<section class="bm-crm-insights" aria-label="Hồ sơ BeautyMatch"><header class="bm-crm-insights__header"><span class="bm-crm-insights__eyebrow">CHĂM SÓC CÁ NHÂN HÓA</span><h3 class="bm-crm-insights__title">Hiểu làn da.<br>Tiếp nối sự quan tâm.</h3><p class="bm-crm-insights__copy">Hồ sơ và hành trình tư vấn từ BeautyMatch.</p></header><div class="bm-crm-insights__actions">${action(lead, "consultation", "Tư vấn với BeautyMatch", true)}${action(lead, "history", "Hồ sơ & lịch sử")}</div><div class="bm-crm-stats"><div class="bm-crm-stat"><strong>${number(summary.total_sessions)}</strong><span>Phiên tư vấn</span></div><div class="bm-crm-stat"><strong>${number(summary.interested_products.length)}</strong><span>Lượt quan tâm</span></div></div>
+  return `<section class="bm-crm-insights" aria-label="Hồ sơ BeautyMatch"><header class="bm-crm-insights__header"><span class="bm-crm-insights__eyebrow">CHĂM SÓC CÁ NHÂN HÓA</span><h3 class="bm-crm-insights__title">Hồ sơ chăm sóc</h3><p class="bm-crm-insights__copy">Hồ sơ và hành trình tư vấn từ BeautyMatch.</p></header><div class="bm-crm-insights__actions">${action(lead, "consultation", "Tư vấn với BeautyMatch", true)}${action(lead, "history", "Hồ sơ & lịch sử")}</div><div class="bm-crm-stats"><div class="bm-crm-stat"><strong>${number(summary.total_sessions)}</strong><span>Phiên tư vấn</span></div><div class="bm-crm-stat"><strong>${number(summary.interested_products.length)}</strong><span>Lượt quan tâm</span></div></div>
   <section class="bm-crm-section"><h4 class="bm-crm-section__heading">Hồ sơ làn da</h4>${profile.skin_type ? `<dl class="bm-crm-profile"><dt>Loại da</dt><dd>${escape(skins[profile.skin_type] || profile.skin_type)}</dd><dt>Nhu cầu</dt><dd>${escape(concernNames.join(" · ") || "Chưa có thông tin")}</dd><dt>Độ nhạy cảm</dt><dd>${profile.sensitivity === "Sensitive" ? "Da nhạy cảm" : "Không đặc biệt nhạy cảm"}</dd><dt>Danh mục</dt><dd>${escape(categories[profile.requested_category] || profile.requested_category)}</dd></dl>` : empty("Chưa có hồ sơ làn da. Bắt đầu tư vấn để bổ sung.")}</section>
   <section class="bm-crm-section"><h4 class="bm-crm-section__heading">Phiên tư vấn gần đây</h4><div class="bm-crm-timeline">${
     sessions
@@ -83,7 +83,7 @@ export function renderCRMInsights(data) {
             )
             .join(
               "",
-            )}${(s.follow_ups || []).some((f) => f.follow_up_status === "PENDING") ? '<span class="bm-crm-status" data-status="pending">Chờ phân công chăm sóc</span>' : ""}<a class="bm-crm-button" href="/beautymatch/result" data-bm-action="result" data-bm-lead="${escape(lead)}" data-bm-session="${escape(s.session_id)}">Mở kết quả</a></article>`,
+            )}${(s.follow_ups || []).some((f) => f.follow_up_status === "PENDING") ? '<span class="bm-crm-status" data-status="pending">Chờ phân công chăm sóc</span>' : ""}<a class="bm-crm-button" href="/crm/beautymatch/result" data-bm-action="result" data-bm-lead="${escape(lead)}" data-bm-session="${escape(s.session_id)}">Mở kết quả</a></article>`,
       )
       .join("") || empty("Chưa có phiên tư vấn.")
   }</div></section>

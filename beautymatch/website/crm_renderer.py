@@ -12,7 +12,7 @@ import frappe
 from frappe.website.page_renderers.template_page import TemplatePage
 
 
-RELEASE = "crm-botanical-20261105"
+RELEASE = "crm-native-20261106"
 STYLE_ID = "beautymatch-crm-theme"
 SCRIPT_ID = "beautymatch-crm-runtime"
 

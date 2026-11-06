@@ -43,20 +43,22 @@ def _merge_side_panel(sections):
 
 
 def _merge_dropdown_items(items):
-	"""Preserve all existing routes, labels and hidden flags, including admin edits."""
-	merged = deepcopy(items)
-	if any(str(item.get("route") or "").rstrip("/") == "/beautymatch" for item in merged):
-		return merged, False
-	merged.append({
-		"type": "Route",
-		"route": "/beautymatch",
-		"label": "BeautyMatch",
-		"icon": "feather",
-		"open_in_new_window": 0,
-		"hidden": 0,
-		"is_standard": 0,
-	})
-	return merged, True
+	"""Retire only our owned website entry after native sidebar deployment.
+
+	The native UserDropdown opens routes with window.open even for target ''.
+	The real RouterLink sidebar entry replaces it; admin-customized rows stay.
+	"""
+	merged = [deepcopy(item) for item in items if not _owned_website_entry(item)]
+	return merged, len(merged) != len(items)
+
+
+def _owned_website_entry(item):
+	return (
+		str(item.get("route") or "").rstrip("/") == "/beautymatch"
+		and item.get("label") == "BeautyMatch"
+		and item.get("icon") == "feather"
+		and not item.get("is_standard")
+	)
 
 
 def _brand_changes(name, logo):
@@ -149,8 +151,10 @@ def _install_settings(capabilities):
 		items = [row.as_dict() for row in doc.get("dropdown_items") or []]
 		merged, changed = _merge_dropdown_items(items)
 		if changed:
-			# Append the new child only: do not rebuild or renumber existing rows.
-			doc.append("dropdown_items", merged[-1])
+			# Remove only this app's obsolete entry. Preserve all other child rows.
+			for row in list(doc.get("dropdown_items") or []):
+				if _owned_website_entry(row.as_dict()):
+					doc.remove(row)
 			report["navigation"]["changed"] = True
 	if capabilities["branding"]:
 		changes = _brand_changes(doc.get("brand_name"), doc.get("brand_logo"))

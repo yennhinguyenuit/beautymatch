@@ -47,7 +47,7 @@ test("native CRM summary displays API data, scoped navigation and actual follow-
       html.includes("Mụn") &&
       html.includes("Sản phẩm thật"),
   );
-  assert(html.includes('href="/app/crm-task/42"'));
+  assert(html.includes('href="/crm/tasks/view/list?open=42"'));
   assert(html.includes('data-bm-session="PRIVATE-SESSION"'));
   assert(!/href="[^"]*PRIVATE/.test(html));
   assert(!html.includes("<img src=x"));
@@ -58,7 +58,7 @@ test("native CRM summary displays API data, scoped navigation and actual follow-
   ];
   const pendingHtml = renderCRMInsights(pending);
   assert(pendingHtml.includes("Chờ phân công chăm sóc"));
-  assert(!pendingHtml.includes('href="/app/crm-task/42"'));
+  assert(!pendingHtml.includes('href="/crm/tasks/view/list?open=42"'));
 });
 test("native CRM summary rejects malformed responses and unsafe task URLs", () => {
   assert.throws(() => renderCRMInsights({}), /chưa đúng cấu trúc/);

@@ -1,5 +1,7 @@
 # BeautyMatch — Tích hợp giao diện Frappe CRM
 
+> **Cập nhật 06/11/2026:** theme trong tài liệu này tiếp tục được dùng, nhưng phần navigation/entrypoint đã chuyển sang Vue native trong `/crm/...`. Xem [CRM_NATIVE_INTEGRATION.md](CRM_NATIVE_INTEGRATION.md); không dùng hướng dẫn sidebar DOM hoặc menu website cũ để triển khai module hiện tại.
+
 Ngày kiểm tra: 05/11/2026. Repository hiện có, nhánh `feat/recommendation-ui`. Không commit, push, merge hoặc đổi nhánh remote.
 
 ## Kết quả và phạm vi
@@ -32,7 +34,7 @@ Riêng cột HTML chứa `.bm-crm-insights` được bỏ giới hạn chiều c
 
 ## Điểm mở rộng CRM được sử dụng
 
-**Điều hướng:** thêm một dòng Route `/beautymatch` trong `FCRM Settings.dropdown_items`. Entry nằm trong menu thương hiệu/tài khoản của CRM, dùng cơ chế `CRM Dropdown Item` và hoạt động trên mobile. Sidebar chính của CRM 1.86.0 khai báo route trong `frontend/src/utils/navigation.js`, chưa có extension hỗ trợ external item tương đương. Vì vậy không chèn DOM hoặc sửa sidebar core để tạo một entry giả. Các menu gốc, trạng thái hidden và lựa chọn admin được giữ nguyên; installer không thêm trùng route đã có.
+**Điều hướng metadata:** thêm một dòng Route `/beautymatch` trong `FCRM Settings.dropdown_items`. Entry nằm trong menu thương hiệu/tài khoản của CRM, dùng cơ chế `CRM Dropdown Item` và hoạt động trên mobile. Sidebar chính của CRM 1.86.0 khai báo route trong `frontend/src/utils/navigation.js`, chưa có extension hỗ trợ external item tương đương. Các menu gốc, trạng thái hidden và lựa chọn admin được giữ nguyên; installer không thêm trùng route đã có. Mục sidebar riêng được bổ sung ở đợt 06/11/2026 bằng adapter Custom App có kiểm tra quyền; xem [cơ chế và kiểm thử sidebar](CRM_SIDEBAR_INTEGRATION.md).
 
 **Lead Detail:** tạo Custom Field HTML `CRM Lead.beautymatch_insights`, thuộc module BeautyMatch. Installer thêm section BeautyMatch vào `CRM Fields Layout` loại `Side Panel`, giữ nguyên toàn bộ section/field gốc và tôn trọng vị trí đã được admin tùy chỉnh. Nếu layout gốc không tồn tại hoặc schema không tương thích, installer báo `unsupported`, không tạo một layout trống làm mất field CRM.
 
@@ -157,7 +159,7 @@ Nếu cần gỡ cả panel/menu, trước tiên ngừng gọi installer metadat
 
 ## Giới hạn cần biết
 
-- Entry BeautyMatch dùng menu thương hiệu/tài khoản được CRM hỗ trợ; chưa thêm một external item trực tiếp vào sidebar chính vì phiên bản hiện tại không có hook tương ứng.
+- Entry metadata dùng menu thương hiệu/tài khoản. Từ 06/11/2026, mục dưới Dashboard được bổ sung bằng adapter Custom App có kiểm tra quyền, không sửa core; xem [báo cáo sidebar và giới hạn của cơ chế này](CRM_SIDEBAR_INTEGRATION.md). Phiên bản CRM hiện tại vẫn chưa có metadata hook chính thức cho external sidebar item.
 - Figma MCP đã hết quota của gói hiện tại nên không cập nhật editable layers trong đợt này. Art direction lấy từ Botanical Cinema đang triển khai và ảnh tham chiếu của người dùng.
 - Assignee follow-up chưa cấu hình nên Interested thường trả `PENDING`; integration chỉ hiển thị trạng thái API thật, không tự đổi người được phân công. Vòng đời CREATED/hủy/mở lại Task đã được kiểm tra transactional ở đợt backend/frontend trước.
 - Dashboard CRM vẫn là dashboard CRM gốc. Dashboard BeautyMatch tiếp tục dùng các KPI/chart có trong backend; không thêm chỉ số chăm sóc da hoặc số liệu giả.

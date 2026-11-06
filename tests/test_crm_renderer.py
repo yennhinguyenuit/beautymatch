@@ -70,7 +70,7 @@ class TestCRMRenderer(unittest.TestCase):
 		self.assertIn('class="h-full bm-crm" lang="vi" data-theme="light"', result)
 		self.assertEqual(result.count('id="beautymatch-crm-theme"'), 1)
 		self.assertEqual(result.count('id="beautymatch-crm-runtime"'), 1)
-		self.assertIn("?v=crm-botanical-20261105", result)
+		self.assertIn(f"?v={self.module.RELEASE}", result)
 		self.assertLess(result.index("index-HASH.css"), result.index("crm-botanical.css"))
 		for native in (
 			'/assets/crm/frontend/assets/index-HASH.js',

@@ -5,12 +5,16 @@
     "dev": "node scripts/preview_frontend.mjs",
     "test": "node --test tests/frontend/*.test.mjs",
     "test:e2e": "playwright test",
-    "test:live": "node scripts/verify_live_frontend.mjs",
+    "test:live": "node scripts/verify_crm_native.mjs --exercise-flow",
     "format:check": "prettier --check \"beautymatch/public/js/*.mjs\" \"beautymatch/public/css/*.css\" \"tests/frontend/*.mjs\" \"tests/browser/*.mjs\" \"scripts/*.mjs\" playwright.config.mjs",
     "check": "node scripts/check_frontend.mjs",
     "test:visual": "node scripts/capture_botanical.mjs",
-    "test:crm": "node scripts/verify_crm_visual.mjs --phase after",
-    "test:crm:crud": "node scripts/verify_crm_visual.mjs --phase after --exercise-crud"
+    "test:crm": "node scripts/verify_crm_native.mjs",
+    "test:crm:crud": "node scripts/verify_crm_native.mjs --exercise-flow",
+    "test:crm:sidebar": "node scripts/verify_crm_native.mjs",
+    "test:crm:native": "node scripts/verify_crm_native.mjs",
+    "test:crm:task": "node scripts/verify_crm_task.mjs",
+    "test:crm:native:flow": "node scripts/verify_crm_native.mjs --exercise-flow"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

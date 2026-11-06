@@ -9,6 +9,12 @@ files.push(
   "scripts/verify_live_frontend.mjs",
   "scripts/capture_botanical.mjs",
   "scripts/verify_crm_visual.mjs",
+  "scripts/verify_crm_sidebar.mjs",
+  "scripts/verify_crm_native.mjs",
+  "scripts/verify_crm_task.mjs",
+  "frontend/crm/integration.mjs",
+  "frontend/crm/store.mjs",
+  "frontend/crm/domain.mjs",
 );
 for (const file of files) {
   const result = spawnSync(process.execPath, ["--check", file], {

@@ -6,6 +6,7 @@ export class ApiError extends Error {
 }
 
 export const METHODS = Object.freeze({
+  save_consultation: "beautymatch.api.frontend.save_consultation",
   generate_recommendations:
     "beautymatch.api.recommendation.generate_recommendations",
   get_recommendation_result:
@@ -116,6 +117,8 @@ export function createLiveApi({
   }
   return {
     mode: "live",
+    saveConsultation: (payload, crm_lead = null) =>
+      call("save_consultation", { payload, crm_lead }, "POST"),
     generate: (args) => call("generate_recommendations", args, "POST"),
     result: (session) =>
       call("get_recommendation_result", { session_id: session }),

@@ -1,0 +1,98 @@
+// Compiled into the host CRM bundle. This is a custom bridge, not an upstream
+// Frappe plugin API. No Vue private properties, DOM menu injection or new app.
+import { reactive } from "vue";
+import LeafIcon from "./LeafIcon.vue";
+
+export const nativeAccess = reactive({ allowed: false, checked: false });
+export const beautyMatchNavigationItem = {
+  label: "BeautyMatch",
+  icon: LeafIcon,
+  route: "BeautyMatch",
+};
+export const hasBeautyMatchAccess = () => nativeAccess.allowed;
+const sections = new Set([
+  "",
+  "consultation",
+  "customer",
+  "result",
+  "feedback",
+  "dashboard",
+]);
+let hostRouter;
+let pending;
+let checkedAt = 0;
+
+export async function refreshNativeAccess(force = false) {
+  if (!force && nativeAccess.checked && Date.now() - checkedAt < 60000)
+    return nativeAccess.allowed;
+  if (pending) return pending;
+  pending = (async () => {
+    try {
+      const response = await fetch(
+        "/api/method/beautymatch.api.navigation.get_sidebar_entry",
+        {
+          credentials: "same-origin",
+          cache: "no-store",
+          signal: AbortSignal.timeout(10000),
+        },
+      );
+      const data = response.ok ? (await response.json()).message : null;
+      nativeAccess.allowed =
+        data?.label === "BeautyMatch" &&
+        ["/beautymatch", "/crm/beautymatch"].includes(data?.href);
+    } catch {
+      nativeAccess.allowed = false;
+    } finally {
+      nativeAccess.checked = true;
+      checkedAt = Date.now();
+      pending = null;
+    }
+    return nativeAccess.allowed;
+  })();
+  return pending;
+}
+
+export function installBeautyMatchRoutes(router, { isLoggedIn }) {
+  if (router.hasRoute("BeautyMatch")) return;
+  hostRouter = router;
+  router.addRoute({
+    path: "/beautymatch/:section?",
+    name: "BeautyMatch",
+    component: () => import("./Workspace.vue"),
+    meta: { beautyMatch: true },
+  });
+  router.beforeEach(async (to) => {
+    if (!isLoggedIn()) {
+      nativeAccess.allowed = false;
+      nativeAccess.checked = false;
+      return;
+    }
+    await refreshNativeAccess();
+    if (to.name === "BeautyMatch" && !sections.has(to.params.section || ""))
+      return { name: "BeautyMatch" };
+    // The page renders a denied state without fetching customer data when the
+    // capability is false. All business APIs independently enforce permissions.
+  });
+  window.beautymatch_native_crm = true;
+  // Retire the old compatibility adapter if a stale runtime loaded it first.
+  window[Symbol.for("beautymatch.crm.sidebar")]?.();
+  document.addEventListener("beautymatch:open", (event) => {
+    const section = event.detail?.section || "";
+    if (sections.has(section))
+      router.push({
+        name: "BeautyMatch",
+        params: { section: section || undefined },
+      });
+  });
+  document.addEventListener("beautymatch:task", (event) => {
+    if (typeof event.detail?.task === "string")
+      openNativeTask(event.detail.task);
+  });
+}
+
+export async function openNativeTask(name) {
+  if (!hostRouter || !/^[a-zA-Z0-9_-]+$/.test(String(name))) return;
+  await hostRouter.push({ name: "Tasks", params: { viewType: "list" } });
+  const { useDoctypeModal } = await import("@/composables/doctypeModal");
+  useDoctypeModal().showModal({ name, doctype: "CRM Task", title: "Task" });
+}
