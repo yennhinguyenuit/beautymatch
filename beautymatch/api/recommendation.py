@@ -77,6 +77,8 @@ def _serialize_session(session):
                 "image_url": item.image_url_snapshot or "",
                 "product_url": item.product_url_snapshot or "",
                 "customer_feedback": item.customer_feedback,
+                "feedback_source": item.get("feedback_source") or "Legacy",
+                "key_ingredients": item.get("key_ingredients_snapshot") or "",
             }
             for item in session.recommendation_items
         ],
@@ -116,6 +118,11 @@ def generate_recommendations(crm_lead, beauty_profile, request_id, profile_versi
     ):
         _invalid("Thông tin không khớp với yêu cầu tư vấn ban đầu.")
 
+    return _generate_saved_submission(crm_lead, beauty_profile, request_id, profile_version, submission)
+
+
+def _generate_saved_submission(crm_lead, beauty_profile, request_id, profile_version, submission, customer_user=None):
+    """Private persistence; caller must authorize the exact Lead and receipt."""
     # Hold the lock until transaction commit/rollback, not just until return.
     _acquire_lock("recommend", request_id)
     existing = frappe.db.get_value(
@@ -159,6 +166,8 @@ def generate_recommendations(crm_lead, beauty_profile, request_id, profile_versi
     session = frappe.get_doc({
         "doctype": "Recommendation Session",
         "crm_lead": crm_lead,
+        "origin": "Customer" if customer_user else "Staff",
+        "customer_user": customer_user,
         "beauty_profile": beauty_profile,
         "request_id": request_id,
         "profile_snapshot": json.dumps(snapshot, ensure_ascii=False),
@@ -186,6 +195,7 @@ def generate_recommendations(crm_lead, beauty_profile, request_id, profile_versi
             "price_snapshot": product.price,
             "image_url_snapshot": product.image_url or "",
             "product_url_snapshot": product.product_url or "",
+            "key_ingredients_snapshot": product.key_ingredients or "",
             "customer_feedback": "None",
         })
     # Recheck profile version immediately before persisting the session.

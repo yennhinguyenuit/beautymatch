@@ -1,108 +1,68 @@
-# BeautyMatch — bàn giao sửa lỗi và demo seminar
+# BeautyMatch — sẵn demo mô hình khách tự nhận gợi ý
 
-Cập nhật 06/11/2026. Nhánh **`fix/request-consistency-ux`**, tạo từ `develop` sạch tại commit **`89d7aecee8ccd48be6376489980ce5b14a4634ca`**. Thay đổi nằm trong working tree; không commit, push hoặc merge. Đã triển khai trực tiếp trên Docker local: **Frappe 15.121.3 / CRM 1.86.0**, site `crm.localhost`, container `crm-frappe-1`.
+Cập nhật **07/11/2026**. Nhánh **`fix/beautymatch-final-demo`**, baseline **`31a7633a844cf7bc448558e879c41915bbeaefc6`**. Working tree chưa commit; không push/merge/force-push. Site local đã xác minh: **Frappe 15.121.3, CRM 1.86.0**, Docker `crm-frappe-1`, `crm.localhost`.
 
-## 1. Luồng cuối cùng và URL
+## 1. Nghiệp vụ hiện tại
 
-**Customer Login → Beauty Profile → Submit Request → CRM Lead → Staff Accept → Consultation → Recommendation → Feedback → CRM Task → History → Dashboard.**
+**Khách đăng nhập → Beauty Profile + đồng ý lưu → CRM Lead/Current Profile → Top 3 ngay → khách tự phản hồi → xác nhận muốn liên hệ → Contact Request → CRM Task + Notification → nhân viên chăm sóc → Call Log → cập nhật Task → lịch sử → dashboard.**
 
-| Màn hình                   | URL local                                            |
-| -------------------------- | ---------------------------------------------------- |
-| Portal khách               | <http://localhost:8000/beautymatch/portal>           |
-| CRM gốc                    | <http://localhost:8000/crm>                          |
-| Tổng quan BeautyMatch      | <http://localhost:8000/crm/beautymatch>              |
-| Yêu cầu tư vấn             | <http://localhost:8000/crm/beautymatch/requests>     |
-| Khách hàng & lịch sử       | <http://localhost:8000/crm/beautymatch/customer>     |
-| Báo cáo                    | <http://localhost:8000/crm/beautymatch/dashboard>    |
-| Tư vấn, mở theo luồng      | <http://localhost:8000/crm/beautymatch/consultation> |
-| Kết quả, mở theo luồng     | <http://localhost:8000/crm/beautymatch/result>       |
-| Route phản hồi tương thích | <http://localhost:8000/crm/beautymatch/feedback>     |
+Không chờ nhân viên để xem sản phẩm. Quan tâm/Không quan tâm chỉ ghi phản hồi, không tạo Task, Deal hoặc Call Log; quy tắc này áp dụng cả khi nhân viên ghi nhận và khi mở session lịch sử. Nguồn phản hồi Customer/Staff được lưu phía server. Đồng ý lưu hồ sơ và đồng ý được liên hệ là hai xác nhận riêng, không chọn sẵn.
 
-Bốn tab chính: **Tổng quan / Yêu cầu tư vấn / Khách hàng & lịch sử / Báo cáo**. Tư vấn và kết quả vẫn có route để reload; phản hồi ở kết quả hoặc bộ lọc **Chỉ phiên có phản hồi** trong lịch sử. Route phản hồi cũ vẫn hoạt động. Mở kết quả khi chưa chọn phiên sẽ hiện hướng dẫn, không tự tạo session.
+Chi tiết dữ liệu, API, phân quyền, sơ đồ và kịch bản **10 phút** ở [BEAUTYMATCH_FINAL_BUSINESS_FLOW](BEAUTYMATCH_FINAL_BUSINESS_FLOW.md).
 
-Portal chỉ cho Website User có role `BeautyMatch Customer`, không có navigation hoặc Sales role. Nhân viên làm việc trong Vue Router, Pinia, sidebar, layout và phiên đăng nhập của CRM hiện có. Các API kiểm tra vai trò và quyền Lead ở backend; sessionStorage hoặc menu ẩn không cấp quyền.
+## 2. Đăng nhập và URL
 
-## 2. Lỗi đã sửa và quy tắc nhất quán
+| Vai trò     | Đăng nhập ngắn | Email gốc giữ nguyên                 |
+| ----------- | -------------- | ------------------------------------ |
+| Khách       | `khach`        | `customer.demo@example.invalid`      |
+| Tư vấn viên | `tuvan`        | `sales.user.demo@example.invalid`    |
+| Quản lý     | `quanly`       | `sales.manager.demo@example.invalid` |
 
-| Lỗi/nguyên nhân                                                             | Cách sửa                                                                                                                                                                        |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Form yêu cầu A đọc Current Profile đã bị B cập nhật                         | Form lấy snapshot bất biến của chính request từ server. Khi khách gửi mới, Pending **và In Progress** cũ thành Superseded, giữ nhân viên phụ trách và liên kết `superseded_by`. |
-| Hoàn tất chỉ kiểm tra cùng Lead/profile                                     | Server kiểm tra nhân viên tiếp nhận, trạng thái, session đã liên kết, receipt và `profile_version`; không dùng session của B hoàn tất A.                                        |
-| Hai nhân viên có thể tiếp nhận chồng nhau, Manager có thể ghi đè người nhận | Khóa account/request đến commit/rollback; chỉ một người nhận. Manager có quyền xem nhưng không tự chiếm yêu cầu đã tiếp nhận.                                                   |
-| Retry đồng thời gặp `TimestampMismatchError`                                | MariaDB local thực tế là `REPEATABLE-READ`. Dùng locking read cho receipt, mapping/Lead và Current Profile sau khi chờ khóa.                                                    |
-| UUID tư vấn cũ có thể trỏ tới session không thuộc yêu cầu mới               | Lần tạo đầu tiên yêu cầu một UUID tư vấn chưa dùng; retry đã có session phải khớp hash nội dung đã xác nhận.                                                                    |
-| `complete_request` lỗi làm màn hình mất kết quả đã lưu                      | Lưu liên kết request–session trên server ngay trong giao dịch tạo session. Hoàn tất là bước riêng, có cảnh báo và nút thử lại, không gọi generation lần nữa.                    |
-| Bộ lọc mới có thể hiển thị phản hồi cũ đến trễ hoặc dữ liệu cũ khi lỗi      | Mỗi query có phiên bản; xóa rows khi bắt đầu tải, bỏ qua success/error cũ, reset trang khi đổi trạng thái, có retry.                                                            |
-| Chỉ lọc feedback trong 10 session vừa tải                                   | Backend lọc bằng `EXISTS` trước `LIMIT/OFFSET`, trả tổng số phiên có phản hồi chính xác và thứ tự creation/name ổn định.                                                        |
-| Lead/session không phân vùng đầy đủ khi đổi tài khoản                       | Context native có owner xác thực. Đổi tài khoản/logout/hết phiên làm mất hiệu lực hoặc xóa context cũ; không nhập lại khóa legacy không rõ owner.                               |
+Mật khẩu demo hiện có giữ nguyên, đọc tại [credentials local](../.local/seminar-credentials.json); không đưa mật khẩu/token vào Git. Administrator không đổi mật khẩu. Không đổi tài khoản hoặc cấp thêm quyền quản trị trong lần hoàn thiện self-service.
 
-### Trạng thái yêu cầu
+| Màn hình                            | URL                                                   |
+| ----------------------------------- | ----------------------------------------------------- |
+| Khách tự nhận gợi ý                 | <http://localhost:8000/beautymatch/portal/>           |
+| CRM gốc                             | <http://localhost:8000/crm>                           |
+| Tổng quan BeautyMatch               | <http://localhost:8000/crm/beautymatch>               |
+| Chăm sóc yêu cầu đã đồng ý liên hệ  | <http://localhost:8000/crm/beautymatch/care>          |
+| Hồ sơ & lịch sử nhân viên           | <http://localhost:8000/crm/beautymatch/customer>      |
+| Báo cáo                             | <http://localhost:8000/crm/beautymatch/dashboard>     |
+| Request tư vấn cũ, lưu trữ/tiếp tục | <http://localhost:8000/crm/beautymatch/requests>      |
+| Lead QA đã sửa quyền                | <http://localhost:8000/crm/leads/CRM-LEAD-2026-00038> |
 
-| Trạng thái  | Ý nghĩa và điều kiện                                                                                                                                                        |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pending     | Portal đã lưu hồ sơ và request thành công; chưa có nhân viên nhận.                                                                                                          |
-| In Progress | Nhân viên có quyền Lead tiếp nhận, `assigned_to` là chính nhân viên đó. Có thể chưa tạo session hoặc đã có session đang chờ cập nhật trạng thái.                            |
-| Completed   | Backend xác nhận session được tạo qua phiên tư vấn đã ràng buộc với request, đúng version và đúng nhân viên nhận. Retry cùng session trả Completed, không tạo thêm session. |
-| Superseded  | Khách đã gửi yêu cầu mới hơn. Snapshot, nhân viên phụ trách, session cũ nếu có và lịch sử được giữ. Không tiếp tục tạo mới/hoàn tất yêu cầu cũ.                             |
+Notification mới mở `/crm/beautymatch/contact/<UUID>` bằng named route của CRM; UUID không chứa thông tin liên hệ. Header và action mở đúng Lead của request. Danh sách/số yêu cầu chờ chăm sóc lấy từ API thật, không dựa vào bell. Tổng quan ưu tiên mô hình mới; request v1 được ghi rõ là phiên bản trước.
 
-Chuyển trạng thái: **Pending → In Progress → Completed**; **Pending hoặc In Progress → Superseded** khi khách gửi yêu cầu mới. Completed không bị thay thế. Giao diện hiển thị rõ yêu cầu mới hơn và thông báo xung đột bằng tiếng Việt; không chuyển hồ sơ B vào form A.
+## 3. Điều kiện dữ liệu demo
 
-Snapshot gồm payload/hash, khách, Lead/profile và version lúc gửi, được DocType validation bảo vệ khỏi chỉnh sửa. Nhân viên có thể chọn **Chỉnh sửa thông tin**, nhưng dữ liệu sửa được lưu vào Consultation Submission/version riêng. Consent luôn bỏ chọn khi tải form; phải xác nhận lại trước khi tạo tư vấn.
+Nguyễn Minh Anh: **Combination; Oil Control/Acne/Aging; Serum; 325000; không tránh thành phần; không ưu tiên thương hiệu**. Catalog local **68 = 65 nghiên cứu + 3 mẫu có nhãn trình diễn**, **5 Active**. Engine thật trả ba sản phẩm, điểm **82,46 / 80,35 / 74,04**. B/C hiện trả 0; không ép bộ lọc, sửa claim hoặc thuật toán. [Environment thật](../test-results/self-service/environment.json).
 
-Khóa portal dùng account → request; generation tiếp tục khóa contact → Lead → profile theo thứ tự TASK2 để tránh chờ vòng. Tạo submission, matching thật, session và liên kết request–session cùng một giao dịch. Giao dịch lỗi thì rollback. Advisory lock được giải phóng khi commit/rollback.
+Sản phẩm thiếu ảnh dùng fallback có nhãn; ảnh có bản sao chính xác dùng asset local theo provenance đang có. Điểm, giá và thành phần là snapshot lưu trong Session/Item, không hardcode kết quả. Số điện thoại trong QA là dữ liệu giả lập, không gọi thật.
 
-Thay đổi cần thiết trong [API hồ sơ](../beautymatch/api/profile.py) chỉ là current read `FOR UPDATE` cho Lead/Profile sau khi chờ khóa, giữ kiểm tra quyền đọc/ghi, validation và response hiện có. Không đổi matching engine, công thức điểm, API recommendation/feedback/dashboard hoặc dữ liệu catalog nghiên cứu.
-
-## 3. Nhân viên tiếp nhận và khôi phục lỗi
-
-1. Vào **Yêu cầu tư vấn**, lọc **Chờ tiếp nhận**, tìm theo tên hoặc mã nếu cần.
-2. Chọn **Tiếp nhận tư vấn**. Kiểm tra **Hồ sơ khách đã gửi**; đây là snapshot của request, không phải bản mới nhất của khách.
-3. Nếu cần đổi nhu cầu, chọn **Chỉnh sửa thông tin**. Bản gốc vẫn được giữ.
-4. Xác nhận khách đồng ý lưu thông tin, chọn **Xác nhận & tạo gợi ý**.
-5. Xem tối đa ba kết quả thật, hoặc empty state thật. Chỉ hiển thị Completed sau xác nhận backend.
-
-Nếu thấy **“Đã tạo kết quả tư vấn nhưng chưa cập nhật được trạng thái yêu cầu.”**, vẫn có thể xem kết quả/feedback. Chọn **Thử cập nhật trạng thái yêu cầu** khi kết nối hoạt động lại. Nút này chỉ gọi đọc trạng thái và hoàn tất, không tạo session.
-
-Nếu đã đóng trình duyệt hoặc đăng nhập lại, vào **Yêu cầu tư vấn → Đang tư vấn → Tiếp tục tư vấn**. Server trả snapshot/session đã gắn; có session thì mở lại kết quả. Không cần lấy UUID/session từ trình duyệt cũ. Có thể mở session từ lịch sử; server tìm lại request theo session. Nếu đã Superseded, kết quả cũ vẫn được giữ và nhân viên được hướng dẫn tiếp nhận yêu cầu mới.
-
-Tổng quan hiển thị số Pending và ba yêu cầu mới nhất từ API thật, cùng nút tiếp nhận, tư vấn khách mới và mở Leads. Queue có ngày, mã rút gọn, trạng thái, tên nhân viên, hồ sơ, tìm kiếm, phân trang và các action phù hợp người nhận. Bộ lọc lịch sử được áp dụng toàn bộ dữ liệu trước phân trang; đơn vị tổng là **phiên có phản hồi**, không phải số item.
-
-Context lựa chọn chỉ lưu định danh cần thiết. Draft retry tạm lưu đầu vào cần để khôi phục khi lỗi, thuộc tài khoản hiện tại, xóa sau thành công/đổi tài khoản/logout. Cùng tài khoản reload phục hồi phiên; tài khoản khác phải chọn khách lại. Dữ liệu server và kiểm tra quyền luôn quyết định. Không đưa tên/email/phone hoặc định danh tư vấn vào query string.
-
-## 4. Tài khoản và dữ liệu demo
-
-| Vai trò            | Username                             | Cách dùng                                                                                    |
-| ------------------ | ------------------------------------ | -------------------------------------------------------------------------------------------- |
-| Customer Demo      | `customer.demo@example.invalid`      | Chỉ hồ sơ/trạng thái của mình trên portal.                                                   |
-| Sales User Demo    | `sales.user.demo@example.invalid`    | Tiếp nhận và tư vấn ba Lead demo được phân công; default follow-up assignee.                 |
-| Sales Manager Demo | `sales.manager.demo@example.invalid` | Xem queue/báo cáo theo quyền CRM; có thể nhận request còn trống, không ghi đè người đã nhận. |
-| Administrator      | `Administrator`                      | Tài khoản local hiện có; mật khẩu không đổi.                                                 |
-
-Mật khẩu demo nằm trong **[credentials local](../.local/seminar-credentials.json)**, mở bằng editor riêng; không đưa lên slide hoặc commit. Seed chạy lại không reset mật khẩu, không tạo trùng Lead/profile/session/Task mẫu, không xóa dữ liệu nhóm. QA browser dùng tài khoản/Lead demo hoặc Lead có tên QA rõ ràng; các bản ghi đã tạo được giữ lại để kiểm chứng. Backend audit rollback toàn bộ test write.
-
-| Hồ sơ giả lập   | Điều kiện                                                                                                 | Kết quả matching thật                                 |
-| --------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| Nguyễn Minh Anh | Combination; Oil Control, Acne, Aging; không đặc biệt nhạy cảm; Serum; 325.000; không tránh/ưu tiên brand | 3 eligible, 3 kết quả, điểm **82,46 / 80,35 / 74,04** |
-| Trần Ngọc Hà    | Dry; Dehydration, Skin Barrier; Sensitive; Moisturizer; 400.000; tránh Fragrance                          | 0 kết quả đủ điều kiện                                |
-| Lê Khánh Linh   | Oily; Acne, Oil Control; Sunscreen; 150.000                                                               | 0 kết quả đủ điều kiện                                |
-
-Catalog giữ **68 Product Profile = 65 nghiên cứu + 3 bản sao demo**. **5 Active**: 2 nghiên cứu + 3 demo, đều đủ trường bắt buộc của engine. Tên bản demo có nhãn **Mẫu trình diễn**, code bắt đầu `BM-DEMO-`. Không bật Active sản phẩm nghiên cứu thiếu bằng chứng hoặc sửa thuật toán để ép có kết quả.
-
-CSV có **69 dòng**; bốn code nghiên cứu chưa có trong DB: `HASAKI-SER-013`, `HASAKI-SUN-012`, `HASAKI-SUN-013`, `HASAKI-SUN-014`. Có khác biệt ảnh/status/claim giữa dữ liệu cũ và CSV; chưa đồng bộ toàn catalog. B/C có 0 kết quả được báo đúng, không thêm claim/thành phần bịa. Chi tiết trong [environment report](../test-results/request-consistency/environment.json).
-
-Feedback: **Quan tâm** tạo CRM Task thật, default assignee Sales User Demo, hạn một ngày. Lặp lại không tạo Task thứ hai. **Không quan tâm** bắt buộc một lý do hợp lệ, hủy Task hiện có; quan tâm lại mở cùng Task. Thiếu assignee trả **PENDING**; lỗi tạo Task không trả **CREATED**. Không tự tạo Deal. Link Task chỉ hiện khi có quyền đọc.
-
-Portal có hướng dẫn loại da/1–3 vấn đề, ngân sách hiển thị VND, lỗi ngay tại trường và focus trường đầu tiên. Lỗi mạng giữ đầu vào/UUID để retry; không chọn sẵn consent. Khung xác nhận và mã/ngày/bước tiếp theo lấy từ backend. Có thông báo: “BeautyMatch hỗ trợ lựa chọn sản phẩm chăm sóc da dựa trên nhu cầu đã cung cấp, không thay thế tư vấn hoặc chẩn đoán y tế.”
-
-## 5. Build, migrate và chuẩn bị chạy
-
-PowerShell tại thư mục repository, Docker Desktop đang chạy; không dựng lại database hoặc xóa volume.
+Chuẩn bị lại một phiên chưa phản hồi, không tự tạo việc:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prepare_seminar.ps1
+docker exec -w /home/frappe/frappe-bench crm-frappe-1 bench --site crm.localhost execute beautymatch.scripts.seed_demo.prepare_self_service
 ```
 
-Script hiện có start container → kiểm tra/apply bridge đã có → migrate → seed → chuẩn bị A Pending → build CRM/app → clear-cache → restart. Nếu chỉ triển khai bản sửa lần này:
+Lặp lại giữ cùng phiên nếu hồ sơ đúng và chưa feedback/contact. Sau một lượt demo đã có phản hồi hoặc profile đổi, tạo phiên mới để trình bày, giữ lịch sử cũ. Seed chạy lại không reset mật khẩu, không đổi catalog nghiên cứu. [Seed idempotency](../test-results/self-service/seed-idempotency.json), [chuẩn bị](../test-results/self-service/ready-prepared.json), [lặp lại](../test-results/self-service/ready-repeated.json).
+
+## 4. Demo trực tiếp
+
+1. Mở hai browser profile riêng cho khách và nhân viên; đăng nhập tài khoản đúng vai trò.
+2. Khách điền hồ sơ, đồng ý lưu, bấm **Xem sản phẩm phù hợp**. Xem ngay kết quả thật hoặc empty state đã lưu. Reload không thêm session.
+3. Khách chọn **Quan tâm** Top 1. Chọn **Không, cảm ơn** để chứng minh chưa có Contact Request/Task. Hồ sơ và feedback vẫn được giữ.
+4. Chọn muốn liên hệ. Chọn sản phẩm Interested, Phone nếu Lead có số hợp lệ hoặc Email, kiểm tra contact, thời gian/ghi chú tùy chọn, đồng ý liên hệ riêng, bấm gửi.
+5. `tuvan` nhận một notification CRM, nhấn mở đúng request; xem Lead, Task **Todo**, hồ sơ và sản phẩm. Retry đồng thời không thêm Task/notification.
+6. Nhân viên thực hiện hoặc thử liên hệ ngoài hệ thống. Với seminar, chọn cờ **DEMO** và ghi rõ cuộc gọi giả lập. Ghi No Answer: Task vẫn mở; lên lịch gọi lại nếu cần.
+7. Ghi DEMO Consulted; Task vẫn chưa Done. Bấm **Hoàn thành chăm sóc** riêng. Native Call Log mở được cùng Lead, Task, Note. Khách không còn nhu cầu: hủy việc, Do Not Contact và chặn gọi mới.
+8. Xem lịch sử profile/session/feedback/nguồn/Contact/Task/Call. `quanly` mở bốn KPI, hai chart và sáu metric chăm sóc thật. Số DEMO calls hiển thị riêng.
+
+Luồng tại cửa hàng vẫn có: Sales User mở Lead → **Tư vấn với BeautyMatch** → lưu hồ sơ/gợi ý thật → ghi phản hồi nguồn Staff → đồng ý liên hệ riêng mới tạo việc. Không ghi sai rằng khách tự nhấn.
+
+## 5. Build, migrate và kiểm thử
+
+PowerShell tại repository, Docker local đang chạy. Không reset database/volume. **Đợi từng build thành công trước restart**:
 
 ```powershell
 docker exec -w /home/frappe/frappe-bench crm-frappe-1 bench --site crm.localhost migrate
@@ -113,98 +73,138 @@ docker exec -w /home/frappe/frappe-bench crm-frappe-1 bench --site crm.localhost
 docker restart crm-frappe-1
 ```
 
-Đợi site lên, mở URL và **Ctrl+F5**. Chuẩn bị buổi demo tiếp theo:
-
-```powershell
-docker exec -w /home/frappe/frappe-bench crm-frappe-1 bench --site crm.localhost execute beautymatch.scripts.seed_demo.prepare_presentation
-```
-
-Lệnh đưa A về 325.000 và một request Pending phù hợp; chạy lại an toàn, giữ lịch sử. Nó sẽ đánh dấu request đang xử lý cũ của A là Superseded theo đúng quy tắc mới, nên chỉ chạy khi chủ đích chuẩn bị buổi demo.
-
-CRM 1.86.0 chưa có plugin route/sidebar chính thức phù hợp. Giữ nguyên bridge đã có, không thêm file core cần patch: Vite config, router, navigation và AppSidebar. Hướng dẫn upgrade/rollback tại [CRM Native Integration](CRM_NATIVE_INTEGRATION.md). Backup/hash tại [backup local](../.local/crm-native-patch/), không phụ thuộc container tạm. Không tự động áp dụng patch lên baseline/version khác.
-
-## 6. Kịch bản demo 7 phút
-
-Dùng hai browser profile hoặc cửa sổ thường/ẩn danh cho khách và staff. Mở mật khẩu ngoài màn hình trình chiếu. Help của CRM có thể mở ở browser mới; đóng bằng nút X gốc.
-
-| Thời gian | Thao tác                                                                                   | Giải thích                                                                                                                           |
-| --------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| 0:00–0:45 | Customer Demo vào portal, kiểm tra A/325000, chọn đồng ý, **Gửi yêu cầu tư vấn**           | Hiển thị xác nhận thật, mã/ngày và chờ tiếp nhận.                                                                                    |
-| 0:45–1:30 | Sales User → BeautyMatch → xem số Pending → **Tiếp nhận yêu cầu** → nhận A                 | Một nhân viên tiếp nhận; Lead thuộc đúng phạm vi quyền.                                                                              |
-| 1:30–2:15 | Xem **Hồ sơ khách đã gửi**, có thể mở chỉnh sửa, chọn đồng ý mới, **Xác nhận & tạo gợi ý** | Dùng đúng snapshot, lưu phiên/version riêng nếu chỉnh sửa.                                                                           |
-| 2:15–3:00 | Xem Top 3, điểm/giá/lý do/cảnh báo                                                         | Matching dựa dữ liệu thật; không quét da hoặc chẩn đoán y tế.                                                                        |
-| 3:00–4:00 | Top 1 → **Quan tâm** → đợi **CREATED** → mở CRM Task                                       | Đúng Lead/session/item/nhân viên; thao tác lặp không tạo Task trùng.                                                                 |
-| 4:00–5:00 | Khách đổi 324000 và gửi; staff nhận request mới, tạo kết quả                               | Một Current Profile; session cũ được giữ. Nếu đổi khi đang tư vấn, request cũ thành Superseded và không thể hoàn tất bằng hồ sơ mới. |
-| 5:00–5:45 | **Khách hàng & lịch sử** → **Chỉ phiên có phản hồi** → mở phiên cũ                         | Lọc toàn bộ lịch sử trước phân trang; Task theo từng phản hồi.                                                                       |
-| 5:45–6:30 | **Báo cáo** → cập nhật; mở Lê Khánh Linh từ Tổng quan nếu cần minh họa empty               | Bốn KPI/hai chart thật; tỷ lệ quan tâm tính theo phiên có ít nhất một Interested.                                                    |
-| 6:30–7:00 | Sales Manager mở queue/dashboard ở browser riêng                                           | Cùng sản phẩm CRM; quyền backend và lịch sử được giữ.                                                                                |
-
-Khi cần trình bày khôi phục lỗi, dùng ảnh regression hoặc thao tác network block có kiểm soát ở môi trường local. Không giả lập response thành công; bật lại mạng và dùng nút cập nhật trạng thái thay vì gửi tư vấn lần nữa.
-
-## 7. Kiểm thử thực tế và bằng chứng
+Đã triển khai thực tế. Portal dùng hashed bundle toàn bộ dependency; không còn import module tĩnh mới/cũ trộn nhau. Fetch timeout 12 giây, watchdog startup 10 giây, retry tiếng Việt. CRM build dùng bridge Custom App đã có; không thêm patch core. Chi tiết upgrade bridge: [CRM_NATIVE_INTEGRATION](CRM_NATIVE_INTEGRATION.md).
 
 ```powershell
 python -m unittest discover -s tests -p 'test_*.py'
 npm.cmd test
 npm.cmd run check
-npm.cmd run test:seminar
-npm.cmd run test:crm:native:flow
-npm.cmd run test:consistency
-docker exec -w /home/frappe/frappe-bench crm-frappe-1 bench --site crm.localhost execute beautymatch.scripts.request_consistency_audit.verify
-docker exec -w /home/frappe/frappe-bench crm-frappe-1 bench --site crm.localhost execute beautymatch.scripts.seminar_audit.verify
-docker exec -w /home/frappe/frappe-bench crm-frappe-1 bench --site crm.localhost execute beautymatch.scripts.seed_demo.verify_seed
+npm.cmd run test:self-service
+npm.cmd run test:crm
+docker exec -w /home/frappe/frappe-bench crm-frappe-1 bench --site crm.localhost execute beautymatch.scripts.self_service_audit.verify
 docker exec -w /home/frappe/frappe-bench crm-frappe-1 env/bin/python /workspace/beautymatch/scripts/run_local_frappe_tests.py
+docker exec -w /home/frappe/frappe-bench crm-frappe-1 bench --site crm.localhost execute beautymatch.scripts.seed_demo.verify_seed
 ```
 
-| Nhóm                       | Kết quả                                                                                                                                                                                                                                    |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Python offline             | **56 PASS**, gồm kiểm tra filter trước pagination và quyền trước SQL                                                                                                                                                                       |
-| JavaScript unit            | **20 PASS**, gồm response đến ngược thứ tự, account switch/logout/reload và inline validation                                                                                                                                              |
-| Syntax                     | **33 module PASS**                                                                                                                                                                                                                         |
-| Seminar browser thật       | **7 nhóm PASS**, Customer/Sales User/Sales Manager, feedback/Task thật, Axe vùng đã quét, không lỗi JS                                                                                                                                     |
-| Native CRM browser thật    | **13 nhóm PASS**, Administrator/Sales User, Lead tạo/cập nhật, module CRM, feedback, history, reload/mobile/dark, không lỗi JS                                                                                                             |
-| Regression browser mới     | **8 nhóm PASS**, xem [report cuối](../test-results/request-consistency/report.json): API thật, claim đồng thời, A→B, browser mới, mất mạng completion, retry không generation, account switch, search/filter, portal 320/390, không lỗi JS |
-| Request/backend regression | **8 nhóm PASS**, mọi test write rollback, số bản ghi không đổi                                                                                                                                                                             |
-| Seminar/backend audit      | **10 nhóm PASS**, lifecycle Task, PENDING, lỗi tạo Task, quyền và cả bốn KPI/hai chart so với SQL độc lập; rollback                                                                                                                        |
-| Bộ TASK4 có sẵn            | **9 PASS**; unit tests có fixture/patch riêng, không dùng thay bằng chứng E2E thật                                                                                                                                                         |
-| Seed                       | PASS: counts, hash catalog nghiên cứu và credentials không đổi khi chạy lại                                                                                                                                                                |
-| Triển khai                 | Migrate, build CRM/app, clear-cache và restart local đã thực hiện                                                                                                                                                                          |
+Chạy browser flow và seed tuần tự vì cùng cập nhật Customer Demo. E2E dùng API/database thật, giữ bản ghi QA có nhãn làm bằng chứng. Backend audit rollback mọi test write và kiểm tra counts không đổi. TASK4 chỉ bật test tạm, khôi phục site config nguyên byte.
 
-Browser acceptance không intercept hoặc bịa response API. Lỗi completion được tạo bằng **Chrome `Network.setBlockedURLs`** chỉ chặn URL `complete_request`; session/đọc dữ liệu và lần retry vẫn gọi server thật. Out-of-order xác định bằng unit test deferred promises của controller đang dùng trong view; browser thêm kiểm tra đổi filter nhanh và offline thật. Backend test feedback tạo hơn 20 session mới hơn để chứng minh phản hồi ở trang cũ vẫn tìm được.
+## 6. Kết quả và bằng chứng
 
-Test runner Frappe ban đầu bị tắt; runner local chỉ bật `allow_tests` tạm, bỏ fixture toàn cục và khôi phục cấu hình site **nguyên byte** trong `finally`. Không cài thêm dependency chỉ để xuất XML; dùng log runner chuẩn. Các lượt đầu đã tái hiện stale-read thật, sau đó sửa và chạy lại. Không xóa/skip assertion để báo đạt; test điều hướng được cập nhật đúng bốn tab và endpoint request mới.
+| Bộ kiểm thử          | Kết quả đã thực hiện                                                                                                                                                                |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Python offline       | **56 PASS**                                                                                                                                                                         |
+| JS unit              | **25 PASS**, thêm xác nhận feedback không hứa liên hệ trước consent                                                                                                                 |
+| Syntax               | **39 module PASS**                                                                                                                                                                  |
+| Browser self-service | **10 nhóm PASS**, đúng khach/tuvan/quanly, không lỗi JS, desktop/390/320; [report](../test-results/self-service/report.json)                                                        |
+| Backend thật         | **15 nhóm PASS**, gồm unique-key delivery failure thật, phân quyền native Task/Call, opt-out, retry và SQL dashboard; rollback; [report](../test-results/self-service/backend.json) |
+| CRM native smoke     | **5 nhóm PASS**, tám module navigation, Lead filter, native Task modal, mobile/dark/Axe scope; [report](../test-results/crm-native-smoke/report.json)                               |
+| TASK4                | **9 PASS**: ba test generation gốc giữ nguyên, sáu test feedback đổi sang consent riêng; [log](../test-results/request-consistency/task4.log)                                       |
+| Seed                 | PASS, counts/catalog nghiên cứu/credentials không đổi; lần chuẩn bị thứ hai `changed=false`                                                                                         |
+| Build                | CRM/Frappe assets thành công; có cảnh báo Browserslist/chunk upstream, không lỗi compile                                                                                            |
 
-Bằng chứng local:
+Không báo đạt chỉ từ API 200: browser kiểm tra form/cards/feedback/notification/deep link/modal/call timeline/Task state/dashboard thực sự hiển thị và thao tác. Call Logs trong acceptance là **DEMO có nhãn**, không phải đã gọi khách thật.
 
-Kiểm tra sẵn demo cuối lúc **19:49 ngày 06/11/2026**: cả ba tài khoản demo đăng nhập được; A có ngân sách **325.000**, một yêu cầu **Pending**, consent chưa chọn; Sales User có nút tiếp nhận, Manager mở báo cáo thật, mỗi sidebar có đúng một mục BeautyMatch. Khách tiếp tục bị chặn CRM. Xem [ready-check](../test-results/request-consistency/ready-check.json), [portal sẵn demo](../test-results/request-consistency/ready-customer.png), [sidebar và queue](../test-results/request-consistency/ready-staff.png), [Manager](../test-results/request-consistency/ready-manager.png).
+Các lượt đầu có lỗi selector/chờ nhầm phiên lịch sử trong harness và phạm vi chỉnh test sai; đã sửa, giữ đủ chín TASK4 tests và chạy lại thành công. Không bỏ assertion chức năng. Contract cũ **Interested tự tạo Task** đã bị loại bỏ theo yêu cầu mới; test TASK4 được đổi để kiểm tra không có Task trước consent, một Task sau consent, không tự mở lại việc đã hủy. Các script seminar/P0 browser v1 vẫn giữ nguyên làm lịch sử, không gắn nhãn PASS của v2.
 
-- [Regression request](../test-results/request-consistency/report.json), [backend request](../test-results/request-consistency/request-backend.json), [backend seminar](../test-results/request-consistency/seminar-backend.json), [TASK4 log](../test-results/request-consistency/task4.log)
-- [Seed](../test-results/request-consistency/seed-idempotency.json), [phiên bản/catalog](../test-results/request-consistency/environment.json)
-- [Seminar](../test-results/seminar/report.json), [native CRM](../test-results/crm-native/report.json)
-- [Kết quả vẫn hiển thị khi completion lỗi](../test-results/request-consistency/saved-result-completion-failed.png), [retry thành công](../test-results/request-consistency/completion-retried-no-new-session.png)
-- [Request bị thay thế](../test-results/request-consistency/superseded-requests-correct-filter.png), [portal trạng thái thật](../test-results/request-consistency/portal-confirmation-real-status.png)
-- [Portal 320](../test-results/request-consistency/portal-320-inline-validation.png), [portal 390](../test-results/request-consistency/portal-390-inline-validation.png), [CRM mobile](../test-results/request-consistency/native-overview-mobile.png), [dark](../test-results/request-consistency/native-overview-dark.png)
+### Đối chiếu 22 tiêu chí
 
-## 8. Danh sách file thay đổi
+| Tiêu chí                                      | Bằng chứng trong bộ v2                                                                                          |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 1–2: nhận gợi ý ngay và lưu đúng Lead/Profile | Browser Top 3; audit first-time Website User, receipt/mapping/current profile                                   |
+| 3–4: session/item đúng khách                  | Browser/API 403; audit khách khác, item khác, Lead do caller chỉ định                                           |
+| 5: reload không trùng                         | Browser reload và ba generation retry đồng thời cùng UUID                                                       |
+| 6: rỗng vẫn lưu session                       | Browser budget 1 và audit kiểm tra record thật                                                                  |
+| 7: Interested chưa tạo Task                   | Counts Task/notice trước-sau, Customer và Staff                                                                 |
+| 8–10: consent, từ chối và retry               | Browser No/Yes, một Contact/Task/notice; UUID và canonical intent dedup; missing-assignee/delivery failure thật |
+| 11–12: đúng nhân viên và ngoài quyền          | Sales User mở Task/Lead thực; audit từ chối Contact/native Task/Call và list rows ngoài Lead scope              |
+| 13–14: Call Log chuẩn, đúng liên kết          | Browser native Call Log modal; controller CRM Call Log, Lead, Dynamic Link Task, FCRM Note                      |
+| 15–16: không tự Done, gọi lại                 | No Answer → due_date/việc mở; Consulted vẫn mở tới action hoàn thành                                            |
+| 17: hồ sơ mới giữ lịch sử                     | Browser empty session mới; điểm/feedback session trước giữ nguyên                                               |
+| 18: thống kê đúng                             | Audit Staff/Manager đối chiếu bốn KPI/hai chart và care counts với SQL độc lập                                  |
+| 19: chặn khách vào CRM                        | Browser 403 CRM shell và internal care API, role Website User không nâng quyền                                  |
+| 20: desktop/mobile                            | 1440, 390, 320; native mobile/dark smoke, không overflow                                                        |
+| 21: staff direct consultation                 | Sales User Demo thao tác Lead → form → Top 3 → feedback Staff → consent riêng → Task                            |
+| 22: hồi quy/bảo mật                           | 56 Python, 25 JS, TASK4 9, CRM smoke 5 và các audit/browser v2 trên                                             |
 
-**Backend và metadata:** [portal.py](../beautymatch/api/portal.py), [frontend.py](../beautymatch/api/frontend.py), [profile.py](../beautymatch/api/profile.py), [schema request](../beautymatch/beautymatch/doctype/beautymatch_customer_request/beautymatch_customer_request.json), [validation snapshot](../beautymatch/beautymatch/doctype/beautymatch_customer_request/beautymatch_customer_request.py).
+### Ảnh ứng dụng thật
 
-**Portal và adapter dùng chung:** [portal.html](../beautymatch/www/beautymatch/portal.html), [portal.mjs](../beautymatch/public/js/portal.mjs), [portal.css](../beautymatch/public/css/portal.css), [intake-domain.mjs](../beautymatch/public/js/intake-domain.mjs), [account-context.mjs mới](../beautymatch/public/js/account-context.mjs), [api.mjs](../beautymatch/public/js/api.mjs).
+- [Top 3 ngay trên Portal](../test-results/self-service/instant-top3-desktop.png), [xác nhận liên hệ](../test-results/self-service/customer-contact-confirmed.png)
+- [Bell đúng nhân viên](../test-results/self-service/assigned-contact-notification.png), [request đúng snapshot](../test-results/self-service/staff-contact-details.png)
+- [Task native](../test-results/self-service/native-created-task.png), [chưa nghe máy/hẹn lại](../test-results/self-service/callback-keeps-task-open.png)
+- [Call Log native](../test-results/self-service/native-call-log-modal.png), [hoàn thành riêng](../test-results/self-service/explicit-task-completion.png)
+- [Dashboard quản lý](../test-results/self-service/manager-real-care-dashboard.png), [staff trực tiếp](../test-results/self-service/staff-direct-consultation-separate-consent.png)
+- [Portal 320](../test-results/self-service/portal-320.png), [Portal 390](../test-results/self-service/portal-390.png), [Care mobile](../test-results/self-service/staff-care-mobile.png)
 
-**CRM native:** [store.mjs](../frontend/crm/store.mjs), [portal-api.mjs](../frontend/crm/portal-api.mjs), [latest-request.mjs mới](../frontend/crm/latest-request.mjs), [integration.mjs](../frontend/crm/integration.mjs), [Workspace.vue](../frontend/crm/Workspace.vue), [native.css](../frontend/crm/native.css), [Overview.vue](../frontend/crm/views/Overview.vue), [Requests.vue](../frontend/crm/views/Requests.vue), [Consultation.vue](../frontend/crm/views/Consultation.vue), [Results.vue](../frontend/crm/views/Results.vue), [Customer.vue](../frontend/crm/views/Customer.vue), [crm_form_script.js](../beautymatch/public/js/crm_form_script.js), [crm-botanical.mjs](../beautymatch/public/js/crm-botanical.mjs).
+**Ready check cuối 00:37 ngày 07/11/2026:** [báo cáo](../test-results/self-service/ready-check.json), [Portal](../test-results/self-service/ready-customer.png), [Tổng quan nhân viên](../test-results/self-service/ready-staff.png), [quản lý](../test-results/self-service/ready-manager.png). Phiên `10kuggfvae` có ba kết quả chưa phản hồi, không có Contact Request; consent form chưa chọn. Đăng nhập/xem dữ liệu không tăng Task, Notification hoặc Call Log.
 
-**Kiểm thử và chạy:** [request_consistency_audit.py mới](../beautymatch/scripts/request_consistency_audit.py), [seminar_audit.py](../beautymatch/scripts/seminar_audit.py), [verify_request_consistency.mjs mới](../scripts/verify_request_consistency.mjs), [run_local_frappe_tests.py mới](../scripts/run_local_frappe_tests.py), [verify_seminar.mjs](../scripts/verify_seminar.mjs), [verify_crm_native.mjs](../scripts/verify_crm_native.mjs), [check_frontend.mjs](../scripts/check_frontend.mjs), [package.json](../package.json), [test_frontend_api.py](../tests/test_frontend_api.py), [request-consistency.test.mjs mới](../tests/frontend/request-consistency.test.mjs), [tài liệu này](DEMO_SEMINAR_READY.md).
+Bổ sung đã xác nhận trên UI thật: [Không quan tâm và lý do](../test-results/self-service/feedback-ui.json), [ảnh phản hồi](../test-results/self-service/customer-not-interested.png), không tăng Task/Notification/Call. [Worker health](../test-results/self-service/worker-health.json) xác nhận registry và kết nối trực tiếp đều có một worker online. Một lượt Doctor từng đếm 0 dù process/log vẫn xử lý retry Job OK; restart đã khôi phục đăng ký worker, sau đó cả ba tài khoản mở lại thành công.
 
-Không thêm source core CRM cần patch trong lần sửa này. Không sửa API recommendation/feedback/dashboard hoặc matching engine. Không thay mật khẩu Administrator/demo, không xóa database/volume hoặc dữ liệu của nhóm.
+## 7. Sửa lỗi P0 trước đó vẫn được giữ
 
-## 9. Giới hạn còn lại
+Lead `CRM-LEAD-2026-00038` là QA fixture thuộc tài khoản QA đã bị tắt, không phải Lead Portal của Nguyễn Minh Anh (`00030`). Repair có guard chỉ xét ba Lead mapping demo và đúng QA Lead 00038; hủy assignment QA cũ trước rồi lưu owner/ToDo chuẩn vì native hook unassign có thể xóa owner. Sales User Demo có read/write Lead được giao; không System Manager, không bỏ controller permission. Task, Call Log và FCRM Note thuộc chăm sóc BeautyMatch đều kiểm tra Lead; không thể gỡ Link trong payload để vượt quyền. Ghi chú lịch sử chỉ được backfill khi có Call Log/Lead liên kết chắc chắn.
 
-- Catalog chưa khớp hoàn toàn CSV; B/C hiện 0 kết quả. Ảnh catalog bên ngoài có thể không tải được; UI dùng fallback có nhãn, không thay bằng ảnh sản phẩm khác.
-- Request In Progress từ phiên bản cũ chưa có receipt/session ràng buộc và profile đã thay đổi sẽ bị chặn an toàn; cần khách gửi yêu cầu mới. Không tự gắn lại session dựa vào cùng Lead.
-- Chưa có UI chuyển người nhận; Manager không chiếm request đang được người khác xử lý. Dùng đúng tài khoản đã nhận để tiếp tục.
-- Portal chỉ hiển thị 10 request gần nhất; toàn bộ request/session cũ vẫn trong database và lịch sử CRM. Không public signup hoặc gửi email thật.
-- Context lựa chọn bị xóa khi đổi tài khoản; mở lại từ queue/lịch sử để phục hồi dữ liệu server. Đầu vào chưa gửi chỉ nằm trong form hiện tại; draft retry được giữ sau khi đã bấm gửi.
-- Mobile đã kiểm thử trên Chrome/Playwright 320px và 390px; chưa kiểm tra bàn phím ảo trên thiết bị vật lý.
-- Build host có cảnh báo Browserslist cũ và chunk upstream lớn. Không có lỗi compile. Không nâng dependency CRM ngoài phạm vi nhiệm vụ.
-- Axe chỉ quét những vùng đã ghi trong report; không phải chứng nhận toàn CRM. Bridge native vẫn cần review khi nâng version CRM.
-- [Credentials](../.local/), backup và [test-results](../test-results/) được Git ignore. Sao lưu ảnh/bằng chứng riêng khi chuyển máy; không commit mật khẩu hoặc token.
+Portal từng tái hiện được module cache cũ thiếu export `fieldErrors`, dừng trước API. Bundle có hash, timeout/watchdog/retry được giữ. Không khẳng định đã đọc cache browser gốc của người báo lỗi. [Bằng chứng P0](../test-results/portal-notifications/) vẫn giữ local; bản bàn giao trước lưu trong `.local/self-service-before/`.
+
+## 8. Giới hạn và lưu ý
+
+- Các bộ browser v1 dùng mô hình chờ tiếp nhận/feedback tự tạo Task không còn là tiêu chí nghiệm thu v2, chưa chuyển toàn bộ các script đó sang UI/contract mới; không công bố chúng là PASS v2. Script/test v2 và core smoke nêu trên là bộ dùng hiện tại.
+- `npm.cmd run format:check` toàn repository còn **28 file lỗi style**, tất cả không đổi so với HEAD; scoped Prettier của frontend/tài liệu thay đổi đã PASS. [Log format](../test-results/self-service/format-global.log). Không format hàng loạt code nhóm.
+- Không có tổng đài hoặc tự gửi email khách; ghi cuộc gọi thủ công sau khi liên hệ, giả lập phải DEMO. Email hoàn thành qua Task native sau thực hiện thật.
+- Cần scheduler/worker để retry nền; thiếu assignee có quyền thì Pending Assignment, quản lý phân công Lead trong CRM rồi mở lại yêu cầu. Không mặc định gửi Administrator.
+- Không có OTP điện thoại; quy tắc hiện có chặn ghi đè số đang gắn Lead khi chưa xác minh. Giới hạn phân trang, catalog/ảnh và thiết bị vật lý ghi rõ trong tài liệu nghiệp vụ.
+- Bằng chứng, credentials và build output được Git ignore; sao lưu riêng khi chuyển máy. Không reset DB/xóa volume, đổi mật khẩu Administrator, sửa Matching Engine hoặc core CRM.
+
+## 9. Danh sách file trong working tree
+
+Danh sách tổng hợp từ baseline, gồm phần P0 đã có và self-service v2; xem trạng thái Git để review từng diff. File đính kèm yêu cầu và tài liệu Task 3 của thành viên khác không bị sửa.
+
+- [.gitignore](../.gitignore)
+- [README.md](../README.md)
+- [beautymatch/api/feedback.py](../beautymatch/api/feedback.py)
+- [beautymatch/api/frontend.py](../beautymatch/api/frontend.py)
+- [beautymatch/api/portal.py](../beautymatch/api/portal.py)
+- [beautymatch/api/recommendation.py](../beautymatch/api/recommendation.py)
+- [beautymatch/beautymatch/doctype/beautymatch_customer_request/beautymatch_customer_request.json](../beautymatch/beautymatch/doctype/beautymatch_customer_request/beautymatch_customer_request.json)
+- [beautymatch/beautymatch/doctype/recommendation_item/recommendation_item.json](../beautymatch/beautymatch/doctype/recommendation_item/recommendation_item.json)
+- [beautymatch/beautymatch/doctype/recommendation_session/recommendation_session.json](../beautymatch/beautymatch/doctype/recommendation_session/recommendation_session.json)
+- [beautymatch/hooks.py](../beautymatch/hooks.py)
+- [beautymatch/public/css/portal.css](../beautymatch/public/css/portal.css)
+- [beautymatch/public/js/api.mjs](../beautymatch/public/js/api.mjs)
+- [beautymatch/public/js/portal.mjs](../beautymatch/public/js/portal.mjs)
+- [beautymatch/scripts/seed_demo.py](../beautymatch/scripts/seed_demo.py)
+- [beautymatch/tests/test_task4_api.py](../beautymatch/tests/test_task4_api.py)
+- [beautymatch/www/beautymatch/portal.html](../beautymatch/www/beautymatch/portal.html)
+- [docs/DEMO_SEMINAR_READY.md](../docs/DEMO_SEMINAR_READY.md)
+- [frontend/crm/Workspace.vue](../frontend/crm/Workspace.vue)
+- [frontend/crm/integration.mjs](../frontend/crm/integration.mjs)
+- [frontend/crm/native.css](../frontend/crm/native.css)
+- [frontend/crm/views/Analytics.vue](../frontend/crm/views/Analytics.vue)
+- [frontend/crm/views/Customer.vue](../frontend/crm/views/Customer.vue)
+- [frontend/crm/views/Overview.vue](../frontend/crm/views/Overview.vue)
+- [frontend/crm/views/Requests.vue](../frontend/crm/views/Requests.vue)
+- [frontend/crm/views/Results.vue](../frontend/crm/views/Results.vue)
+- [package.json](../package.json)
+- [scripts/check_frontend.mjs](../scripts/check_frontend.mjs)
+- [scripts/prepare_seminar.ps1](../scripts/prepare_seminar.ps1)
+- [scripts/verify_seminar.mjs](../scripts/verify_seminar.mjs)
+- [beautymatch/api/customer_care.py](../beautymatch/api/customer_care.py)
+- [beautymatch/api/self_service.py](../beautymatch/api/self_service.py)
+- [beautymatch/beautymatch/doctype/beautymatch_contact_request/**init**.py](../beautymatch/beautymatch/doctype/beautymatch_contact_request/__init__.py)
+- [beautymatch/beautymatch/doctype/beautymatch_contact_request/beautymatch_contact_request.json](../beautymatch/beautymatch/doctype/beautymatch_contact_request/beautymatch_contact_request.json)
+- [beautymatch/beautymatch/doctype/beautymatch_contact_request/beautymatch_contact_request.py](../beautymatch/beautymatch/doctype/beautymatch_contact_request/beautymatch_contact_request.py)
+- [beautymatch/config/customer_care.py](../beautymatch/config/customer_care.py)
+- [beautymatch/public/js/beautymatch_portal.bundle.js](../beautymatch/public/js/beautymatch_portal.bundle.js)
+- [beautymatch/public/js/portal-client.mjs](../beautymatch/public/js/portal-client.mjs)
+- [beautymatch/public/js/portal-results.mjs](../beautymatch/public/js/portal-results.mjs)
+- [beautymatch/scripts/portal_notification_audit.py](../beautymatch/scripts/portal_notification_audit.py)
+- [beautymatch/scripts/self_service_audit.py](../beautymatch/scripts/self_service_audit.py)
+- [beautymatch/services/request_notifications.py](../beautymatch/services/request_notifications.py)
+- [docs/BEAUTYMATCH_FINAL_BUSINESS_FLOW.md](../docs/BEAUTYMATCH_FINAL_BUSINESS_FLOW.md)
+- [frontend/crm/care-api.mjs](../frontend/crm/care-api.mjs)
+- [frontend/crm/components/ContactConsent.vue](../frontend/crm/components/ContactConsent.vue)
+- [frontend/crm/views/Care.vue](../frontend/crm/views/Care.vue)
+- [frontend/crm/views/RequestEntry.vue](../frontend/crm/views/RequestEntry.vue)
+- [scripts/verify_portal_notifications.mjs](../scripts/verify_portal_notifications.mjs)
+- [scripts/verify_self_service.mjs](../scripts/verify_self_service.mjs)
+- [tests/frontend/portal-client.test.mjs](../tests/frontend/portal-client.test.mjs)
+- [tests/frontend/self-service.test.mjs](../tests/frontend/self-service.test.mjs)

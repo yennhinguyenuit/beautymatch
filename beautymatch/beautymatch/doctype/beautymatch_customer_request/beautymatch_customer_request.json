@@ -18,9 +18,33 @@
     "payload_json",
     "superseded_by",
     "consultation_receipt",
-    "consultation_hash"
+    "consultation_hash",
+    "notification_recipient",
+    "notification_status",
+    "notification_error"
   ],
   "fields": [
+    {
+      "fieldname": "notification_recipient",
+      "fieldtype": "Link",
+      "options": "User",
+      "label": "Notification Recipient",
+      "read_only": 1
+    },
+    {
+      "fieldname": "notification_status",
+      "fieldtype": "Select",
+      "options": "Pending\nSent\nFailed\nSkipped",
+      "default": "Skipped",
+      "label": "Notification Delivery",
+      "read_only": 1
+    },
+    {
+      "fieldname": "notification_error",
+      "fieldtype": "Data",
+      "label": "Notification Error Type",
+      "read_only": 1
+    },
     {
       "fieldname": "request_id",
       "fieldtype": "Data",

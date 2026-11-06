@@ -257,8 +257,17 @@ app_license = "mit"
 
 # BeautyMatch CRM integrations
 doctype_js = {"CRM Lead": "public/js/crm_lead.js"}
-after_install = ["beautymatch.config.integration.install", "beautymatch.config.portal.install"]
-after_migrate = ["beautymatch.config.integration.install", "beautymatch.config.portal.install"]
+after_install = ["beautymatch.config.integration.install", "beautymatch.config.portal.install", "beautymatch.config.customer_care.install"]
+after_migrate = ["beautymatch.config.integration.install", "beautymatch.config.portal.install", "beautymatch.config.customer_care.install"]
 page_renderer = ["beautymatch.website.crm_renderer.BeautyMatchCRMPage"]
 before_request = ["beautymatch.api.portal.restrict_customer_crm"]
 role_home_page = {"BeautyMatch Customer": "/beautymatch/portal"}
+override_whitelisted_methods = {"crm.api.notifications.get_notifications": "beautymatch.services.request_notifications.get_notifications"}
+scheduler_events = {"all": ["beautymatch.services.request_notifications.retry_pending", "beautymatch.api.customer_care.retry_pending"]}
+doc_events = {
+    "CRM Task": {"validate": "beautymatch.api.customer_care.validate_task", "on_update": "beautymatch.api.customer_care.sync_task"},
+    "CRM Call Log": {"validate": "beautymatch.api.customer_care.validate_call"},
+    "FCRM Note": {"validate": "beautymatch.api.customer_care.validate_note"},
+}
+has_permission = {"CRM Task": "beautymatch.api.customer_care.care_document_permission", "CRM Call Log": "beautymatch.api.customer_care.care_document_permission", "FCRM Note": "beautymatch.api.customer_care.care_document_permission"}
+permission_query_conditions = {"CRM Task": "beautymatch.api.customer_care.task_query", "CRM Call Log": "beautymatch.api.customer_care.call_query", "FCRM Note": "beautymatch.api.customer_care.note_query"}

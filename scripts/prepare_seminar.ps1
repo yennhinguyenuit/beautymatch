@@ -9,7 +9,7 @@ Invoke-CheckedDocker -DockerArguments @('exec', 'crm-frappe-1', 'python', '/work
 Invoke-CheckedDocker -DockerArguments @('exec', 'crm-frappe-1', 'python', '/workspace/beautymatch/scripts/crm_native_patch.py', '--apply')
 Invoke-CheckedDocker -DockerArguments @('exec', '-w', '/home/frappe/frappe-bench', 'crm-frappe-1', 'bench', '--site', 'crm.localhost', 'migrate')
 Invoke-CheckedDocker -DockerArguments @('exec', '-w', '/home/frappe/frappe-bench', 'crm-frappe-1', 'bench', '--site', 'crm.localhost', 'execute', 'beautymatch.scripts.seed_demo.seed_demo')
-Invoke-CheckedDocker -DockerArguments @('exec', '-w', '/home/frappe/frappe-bench', 'crm-frappe-1', 'bench', '--site', 'crm.localhost', 'execute', 'beautymatch.scripts.seed_demo.prepare_presentation')
+Invoke-CheckedDocker -DockerArguments @('exec', '-w', '/home/frappe/frappe-bench', 'crm-frappe-1', 'bench', '--site', 'crm.localhost', 'execute', 'beautymatch.scripts.seed_demo.prepare_self_service')
 Invoke-CheckedDocker -DockerArguments @('exec', '-w', '/home/frappe/frappe-bench/apps/crm/frontend', 'crm-frappe-1', 'yarn', 'build')
 Invoke-CheckedDocker -DockerArguments @('exec', '-w', '/home/frappe/frappe-bench', 'crm-frappe-1', 'bench', 'build', '--app', 'beautymatch')
 Invoke-CheckedDocker -DockerArguments @('exec', '-w', '/home/frappe/frappe-bench', 'crm-frappe-1', 'bench', '--site', 'crm.localhost', 'clear-cache')

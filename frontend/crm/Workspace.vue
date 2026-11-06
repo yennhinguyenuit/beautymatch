@@ -11,6 +11,8 @@ import Results from "./views/Results.vue";
 import Customer from "./views/Customer.vue";
 import Analytics from "./views/Analytics.vue";
 import Requests from "./views/Requests.vue";
+import RequestEntry from "./views/RequestEntry.vue";
+import Care from "./views/Care.vue";
 import "./native.css";
 
 const route = useRoute();
@@ -19,19 +21,28 @@ const store = useBeautyMatch();
 store.syncSelection();
 const tabs = [
 	["", "Tổng quan"],
-	["requests", "Yêu cầu tư vấn"],
+	["care", "Yêu cầu liên hệ"],
 	["customer", "Khách hàng & lịch sử"],
 	["dashboard", "Báo cáo"],
+	["requests", "Yêu cầu tư vấn cũ"],
 ];
-const section = computed(() => route.params.section || "");
+const section = computed(() =>
+	route.name === "BeautyMatchContact"
+		? "care"
+		: route.name === "BeautyMatchRequest"
+			? "request"
+			: route.params.section || "",
+);
 const activeTab = computed(() =>
 	["consultation", "result"].includes(section.value)
 		? store.request
 			? "requests"
 			: "customer"
-		: section.value === "feedback"
-			? "customer"
-			: section.value,
+		: section.value === "request"
+			? "requests"
+			: section.value === "feedback"
+				? "customer"
+				: section.value,
 );
 const title = computed(
 	() =>
@@ -39,6 +50,7 @@ const title = computed(
 			consultation: "Phiên tư vấn",
 			result: "Kết quả tư vấn",
 			feedback: "Phản hồi khách hàng",
+			request: "Yêu cầu tư vấn",
 		})[section.value] ||
 		tabs.find(([key]) => key === section.value)?.[1] ||
 		"BeautyMatch",
@@ -48,6 +60,8 @@ const view = computed(
 		({
 			"": Overview,
 			requests: Requests,
+			request: RequestEntry,
+			care: Care,
 			consultation: Consultation,
 			result: Results,
 			customer: Customer,

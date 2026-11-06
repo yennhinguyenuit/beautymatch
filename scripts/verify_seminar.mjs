@@ -129,7 +129,7 @@ try {
   const page = await customer.newPage();
   await page.goto("/beautymatch/portal");
   await page
-    .getByLabel("Email", { exact: true })
+    .getByLabel("Email hoặc tên đăng nhập", { exact: true })
     .fill(credentials.customer.username);
   await page
     .getByLabel("Mật khẩu", { exact: true })

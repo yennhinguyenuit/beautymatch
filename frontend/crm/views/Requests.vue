@@ -72,8 +72,11 @@ watch(status, () => load(0));
 	<div class="bm-native-intro">
 		<div>
 			<p class="bm-native-eyebrow">TIẾP NHẬN KHÁCH HÀNG</p>
-			<h1>Yêu cầu tư vấn</h1>
-			<p>Hồ sơ do khách hàng gửi, trong phạm vi CRM Lead bạn được phép quản lý.</p>
+			<h1>Yêu cầu tư vấn từ phiên bản trước</h1>
+			<p>
+				Giữ lịch sử và tiếp tục các hồ sơ cũ. Khách mới nhận gợi ý ngay; chăm sóc tại Yêu
+				cầu liên hệ.
+			</p>
 		</div>
 		<Button
 			label="Làm mới yêu cầu"

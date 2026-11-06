@@ -128,7 +128,11 @@ export function createLiveApi({
     customerContext: (lead) =>
       call("get_customer_context", { crm_lead: lead }, "POST"),
     customerView: (lead, start = 0, feedback_only = false) =>
-      call("get_customer_view", { crm_lead: lead, start, feedback_only }, "POST"),
+      call(
+        "get_customer_view",
+        { crm_lead: lead, start, feedback_only },
+        "POST",
+      ),
     scenarios: () => call("get_scenarios", {}, "POST"),
     history: (lead, start = 0) =>
       call("get_customer_history", { crm_lead: lead, start, limit: 20 }),
@@ -206,6 +210,12 @@ export function feedbackMessage(data) {
       kind: "pending",
       title: "PENDING · Đang chờ xử lý",
       text: "Đã ghi nhận sự quan tâm. Công việc chăm sóc đang chờ phân công hoặc xử lý trong CRM.",
+    };
+  if (data.follow_up_status === "NOT_REQUESTED")
+    return {
+      kind: "success",
+      title: "Đã ghi nhận sự quan tâm",
+      text: "Phản hồi đã được lưu. Chỉ tạo công việc khi khách đồng ý được liên hệ ở bước riêng.",
     };
   if (data.follow_up_status === "CREATED")
     return {

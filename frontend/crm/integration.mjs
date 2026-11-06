@@ -15,6 +15,7 @@ export const hasBeautyMatchAccess = () => nativeAccess.allowed;
 const sections = new Set([
   "",
   "requests",
+  "care",
   "consultation",
   "customer",
   "result",
@@ -76,6 +77,20 @@ export function installBeautyMatchRoutes(router, { isLoggedIn }) {
   router.addRoute({
     path: "/beautymatch/:section?",
     name: "BeautyMatch",
+    component: () => import("./Workspace.vue"),
+    meta: { beautyMatch: true },
+  });
+  // CRM notification links pass `leadId`; for this route it is an opaque
+  // customer-request UUID. The backend still checks the linked Lead permission.
+  router.addRoute({
+    path: "/beautymatch/request/:leadId",
+    name: "BeautyMatchRequest",
+    component: () => import("./Workspace.vue"),
+    meta: { beautyMatch: true },
+  });
+  router.addRoute({
+    path: "/beautymatch/contact/:leadId",
+    name: "BeautyMatchContact",
     component: () => import("./Workspace.vue"),
     meta: { beautyMatch: true },
   });

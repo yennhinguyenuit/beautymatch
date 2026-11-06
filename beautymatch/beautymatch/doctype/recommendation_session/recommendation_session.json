@@ -21,7 +21,9 @@
   "settings_snapshot",
   "recommendation_results_section",
   "recommendation_items",
-  "result_message"
+  "result_message",
+  "origin",
+  "customer_user"
  ],
  "fields": [
   {
@@ -128,6 +130,21 @@
    "fieldname": "result_message",
    "fieldtype": "Small Text",
    "label": "Result Message"
+  },
+  {
+   "fieldname": "origin",
+   "fieldtype": "Select",
+   "options": "Legacy\nCustomer\nStaff",
+   "default": "Legacy",
+   "label": "Ngu?n t? v?n",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer_user",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "T?i kho?n kh?ch",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,

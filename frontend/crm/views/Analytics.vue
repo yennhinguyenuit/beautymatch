@@ -1,11 +1,21 @@
 <script setup>
 import { onMounted, ref, computed } from "vue";
 import { Button } from "frappe-ui";
+import { careCall } from "../care-api.mjs";
 import StatePanel from "../components/StatePanel.vue";
 import { useBeautyMatch } from "../store.mjs";
 import { number } from "../domain.mjs";
 import { buildConcernSegments } from "../../../beautymatch/public/js/dashboard-view.mjs";
 const store = useBeautyMatch();
+const care = ref(null);
+const careLabels = {
+	contact_requests: "Yêu cầu liên hệ",
+	pending_requests: "Chờ chăm sóc",
+	open_tasks: "Công việc đang xử lý",
+	completed_tasks: "Công việc hoàn thành",
+	calls: "Cuộc gọi đã ghi nhận",
+	callback_customers: "Khách cần liên hệ lại",
+};
 const data = ref(null),
 	loading = ref(true),
 	error = ref("");
@@ -25,7 +35,9 @@ async function load() {
 	loading.value = true;
 	error.value = "";
 	try {
-		data.value = await store.api.dashboard();
+		const values = await Promise.all([store.api.dashboard(), careCall("care_metrics")]);
+		data.value = values[0];
+		care.value = values[1];
 	} catch (e) {
 		error.value = e.message;
 	} finally {
@@ -51,6 +63,19 @@ onMounted(load);
 				><strong>{{ number(data.kpis[key]) }}{{ suffix }}</strong>
 			</article>
 		</div>
+		<section v-if="care" class="bm-native-panel">
+			<h2>Chăm sóc sau tư vấn</h2>
+			<p>
+				Dữ liệu công việc và Call Logs riêng biệt với lượt Quan tâm. Có
+				{{ care.demo_calls }} cuộc gọi gắn nhãn DEMO.
+			</p>
+			<div class="bm-native-kpis">
+				<article v-for="(label, key) in careLabels" :key="key" :data-care-metric="key">
+					<span>{{ label }}</span
+					><strong>{{ number(care[key]) }}</strong>
+				</article>
+			</div>
+		</section>
 		<div class="bm-native-charts">
 			<section class="bm-native-panel">
 				<h2>Vấn đề da phổ biến</h2>

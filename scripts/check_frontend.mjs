@@ -19,6 +19,9 @@ files.push(
   "frontend/crm/domain.mjs",
   "frontend/crm/latest-request.mjs",
   "scripts/verify_request_consistency.mjs",
+  "scripts/verify_portal_notifications.mjs",
+  "scripts/verify_self_service.mjs",
+  "frontend/crm/care-api.mjs",
 );
 for (const file of files) {
   const result = spawnSync(process.execPath, ["--check", file], {

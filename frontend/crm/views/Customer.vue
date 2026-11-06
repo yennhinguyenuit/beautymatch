@@ -8,6 +8,7 @@ import { useBeautyMatch } from "../store.mjs";
 import { categories, money, number, date } from "../domain.mjs";
 import { openNativeTask } from "../integration.mjs";
 import { latestRequest } from "../latest-request.mjs";
+import Care from "./Care.vue";
 const store = useBeautyMatch(),
 	router = useRouter(),
 	route = useRoute();
@@ -153,6 +154,16 @@ onMounted(() => load());
 										: "Chưa phản hồi"
 							}}
 						</p>
+						<p>
+							Nguồn phản hồi:
+							{{
+								item.feedback_source === "Customer"
+									? "Khách tự đánh giá"
+									: item.feedback_source === "Staff"
+										? "Nhân viên ghi nhận"
+										: "Lịch sử trước cập nhật"
+							}}
+						</p>
 						<span
 							v-if="follow(session, item)?.follow_up_status === 'PENDING'"
 							class="bm-native-status"
@@ -181,4 +192,5 @@ onMounted(() => load());
 			/>
 		</div>
 	</template>
+	<Care v-if="store.selected" :lead="store.selected" />
 </template>

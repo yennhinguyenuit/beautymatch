@@ -8,6 +8,7 @@ import { useBeautyMatch } from "../store.mjs";
 import { feedbackMessage } from "../../../beautymatch/public/js/api.mjs";
 import { money, number, safeUrl, rejectionReasons } from "../domain.mjs";
 import { openNativeTask } from "../integration.mjs";
+import ContactConsent from "../components/ContactConsent.vue";
 const store = useBeautyMatch();
 const router = useRouter();
 const loading = ref(true),
@@ -255,5 +256,6 @@ onMounted(load);
 				</div>
 			</article>
 		</div>
+		<ContactConsent :session="store.result" :customer="store.customer" />
 	</template>
 </template>

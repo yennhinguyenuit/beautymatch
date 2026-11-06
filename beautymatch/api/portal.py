@@ -90,6 +90,13 @@ def get_my_profile():
 
 @frappe.whitelist(methods=["POST"])
 def submit_profile(payload):
+    """Compatibility entry now follows instant self-service, never creates a queue item."""
+    from beautymatch.api.self_service import recommend
+    return recommend(payload)
+
+
+def _submit_legacy_profile(payload):
+    """Historical fixture helper; not whitelisted, never used by the portal."""
     user = _customer()
     data = normalize_customer_payload(payload, user.email)
     # Serialize all intakes for this authenticated account, then use TASK 2's
@@ -108,49 +115,12 @@ def submit_profile(payload):
         return _ack(request)
     if frappe.db.get_value("Consultation Submission", {"request_id": data["request_id"]}, "name", for_update=True):
         frappe.throw("Mã yêu cầu không hợp lệ. Vui lòng gửi lại với yêu cầu mới.", frappe.ValidationError)
-    lead = _account(user, for_update=True)
-    found = intake._find_existing_lead(data)
-    if lead and found and found != lead.name:
-        _deny()
-    if not lead and found:
-        candidate = frappe.get_doc("CRM Lead", found, for_update=True)
-        # A phone number alone is never proof of ownership of an existing Lead.
-        if (candidate.email or "").strip().lower() != user.email.strip().lower():
-            _deny()
-        lead = candidate
-    if lead:
-        intake._check_lead_identity(lead, data)
-        lead.first_name = data["full_name"]
-        if data["phone"] and not lead.mobile_no and not lead.phone:
-            lead.mobile_no = data["phone"]
-        lead.save(ignore_permissions=True)
-    else:
-        assignee = frappe.db.get_single_value("BeautyMatch Settings", "default_follow_up_assignee")
-        if not assignee or not frappe.db.get_value("User", assignee, "enabled") or not set(frappe.get_roles(assignee)).intersection({"Sales User", "Sales Manager"}):
-            frappe.throw("Chưa cấu hình nhân viên tiếp nhận. Vui lòng liên hệ BeautyMatch.", frappe.ValidationError)
-        lead = frappe.get_doc({
-            "doctype": "CRM Lead", "first_name": data["full_name"], "email": data["email"],
-            "mobile_no": data["phone"], "status": "New", "lead_owner": assignee,
-        }).insert(ignore_permissions=True)
-    if not frappe.db.get_value("BeautyMatch Customer Account", {"user": user.name}, "name", for_update=True):
-        if frappe.db.get_value("BeautyMatch Customer Account", {"crm_lead": lead.name}, "name", for_update=True):
-            _deny()
-        frappe.get_doc({"doctype": "BeautyMatch Customer Account", "user": user.name, "crm_lead": lead.name}).insert(ignore_permissions=True)
-    profile = intake._save_profile(data, lead.name)
-    receipt = {
-        "crm_lead": lead.name, "beauty_profile": profile.name, "request_id": data["request_id"],
-        "profile_version": str(profile.modified), "is_existing_lead": bool(found),
-    }
-    frappe.get_doc({
-        "doctype": "Consultation Submission", "request_id": data["request_id"],
-        "payload_hash": intake._payload_hash(data), "crm_lead": lead.name,
-        "beauty_profile": profile.name, "profile_version": str(profile.modified),
-        "response_json": json.dumps(receipt, ensure_ascii=False),
-    }).insert(ignore_permissions=True)
+    lead, profile, receipt = _store_customer_profile(user, data)
     request = frappe.get_doc({
         "doctype": "BeautyMatch Customer Request", "request_id": data["request_id"],
         "customer": user.name, "crm_lead": lead.name, "beauty_profile": profile.name,
         "profile_version": str(profile.modified), "status": "Pending",
+        "notification_status": "Pending",
         "payload_hash": intake._payload_hash(data), "payload_json": json.dumps(data, ensure_ascii=False),
     }).insert(ignore_permissions=True)
     # The same customer lock is held by every staff transition. Never leave an
@@ -162,7 +132,12 @@ def submit_profile(payload):
     for (name,) in previous:
         frappe.db.set_value("BeautyMatch Customer Request", name, {
             "status": "Superseded", "superseded_by": request.name,
+            "notification_status": "Pending",
         })
+    from beautymatch.services.request_notifications import stage, schedule
+    stage(request)
+    for (name,) in previous:
+        schedule(name)
     return _ack(request)
 
 
@@ -204,6 +179,11 @@ def list_requests(status="Pending", start=0, search=""):
             "can_accept": bool(writable and row.status == "Pending" and not row.assigned_to),
             "can_continue": bool(writable and row.status == "In Progress" and row.assigned_to == frappe.session.user),
             "full_name": snapshot["full_name"], "profile": {field: snapshot.get(field) for field in PROFILE_FIELDS}})
+    # Retry failed outbox entries on a normal authorized queue refresh, as well
+    # as through the scheduler. The queue response never depends on delivery.
+    from beautymatch.services.request_notifications import schedule
+    for name in frappe.get_all("BeautyMatch Customer Request", filters={"name": ["in", [row["name"] for row in result]], "notification_status": ["in", ["Pending", "Failed"]]}, limit_page_length=5, pluck="name") if result else []:
+        schedule(name)
     return {"requests": result, "has_more": len(rows) > 20, "start": start, "total": total}
 
 
@@ -242,6 +222,7 @@ def _request_view(request):
         "assigned_to": request.assigned_to, "superseded_by": request.superseded_by,
         "snapshot": snapshot, "profile_version": request.profile_version,
         "session_id": request.recommendation_session,
+        "can_accept": request.status == "Pending" and not request.assigned_to,
         "can_continue": request.status == "In Progress" and request.assigned_to == frappe.session.user}
 
 
@@ -270,6 +251,8 @@ def accept_request(request_id):
     request.status = "In Progress"
     request.assigned_to = frappe.session.user
     request.save(ignore_permissions=True)
+    from beautymatch.services.request_notifications import schedule
+    schedule(request.name)
     return _request_view(request)
 
 
@@ -336,3 +319,53 @@ def restrict_customer_crm():
     path = frappe.local.request.path.rstrip("/")
     if (path == "/crm" or path.startswith("/crm/")) and frappe.session.user != "Guest" and frappe.db.get_value("User", frappe.session.user, "user_type") == "Website User" and CUSTOMER_ROLE in frappe.get_roles():
         _deny()
+
+
+def _store_customer_profile(user, data, self_service=False):
+    """Private: caller validates ownership and holds account/contact locks."""
+    lead = _account(user, for_update=True)
+    found = intake._find_existing_lead(data)
+    if lead and found and found != lead.name:
+        _deny()
+    if not lead and found:
+        candidate = frappe.get_doc("CRM Lead", found, for_update=True)
+        # A phone number alone is never proof of ownership of an existing Lead.
+        if (candidate.email or "").strip().lower() != user.email.strip().lower():
+            _deny()
+        lead = candidate
+    if lead:
+        intake._check_lead_identity(lead, data)
+        lead.first_name = data["full_name"]
+        if data["phone"] and not lead.mobile_no and not lead.phone:
+            lead.mobile_no = data["phone"]
+        lead.save(ignore_permissions=True)
+    else:
+        assignee = frappe.db.get_single_value("BeautyMatch Settings", "default_follow_up_assignee")
+        valid_assignee = assignee and frappe.db.get_value("User", assignee, "enabled") and set(frappe.get_roles(assignee)).intersection({"Sales User", "Sales Manager"})
+        if not self_service and not valid_assignee:
+            frappe.throw("Chưa cấu hình nhân viên tiếp nhận. Vui lòng liên hệ BeautyMatch.", frappe.ValidationError)
+        lead = frappe.get_doc({
+            "doctype": "CRM Lead", "first_name": data["full_name"], "email": data["email"],
+            "mobile_no": data["phone"], "status": "New", "lead_owner": None if self_service else assignee,
+        }).insert(ignore_permissions=True)
+        if self_service and valid_assignee:
+            # Internal ownership mapping without an unsolicited assignment bell.
+            # Native controller access is based on this owner; no CRM role grant.
+            frappe.db.set_value("CRM Lead", lead.name, "lead_owner", assignee)
+            lead = frappe.get_doc("CRM Lead", lead.name, for_update=True)
+    if not frappe.db.get_value("BeautyMatch Customer Account", {"user": user.name}, "name", for_update=True):
+        if frappe.db.get_value("BeautyMatch Customer Account", {"crm_lead": lead.name}, "name", for_update=True):
+            _deny()
+        frappe.get_doc({"doctype": "BeautyMatch Customer Account", "user": user.name, "crm_lead": lead.name}).insert(ignore_permissions=True)
+    profile = intake._save_profile(data, lead.name)
+    receipt = {
+        "crm_lead": lead.name, "beauty_profile": profile.name, "request_id": data["request_id"],
+        "profile_version": str(profile.modified), "is_existing_lead": bool(found),
+    }
+    frappe.get_doc({
+        "doctype": "Consultation Submission", "request_id": data["request_id"],
+        "payload_hash": intake._payload_hash(data), "crm_lead": lead.name,
+        "beauty_profile": profile.name, "profile_version": str(profile.modified),
+        "response_json": json.dumps(receipt, ensure_ascii=False),
+    }).insert(ignore_permissions=True)
+    return lead, profile, receipt

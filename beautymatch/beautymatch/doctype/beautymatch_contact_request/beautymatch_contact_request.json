@@ -1,0 +1,152 @@
+{
+ "doctype": "DocType",
+ "name": "BeautyMatch Contact Request",
+ "module": "BeautyMatch",
+ "autoname": "field:request_id",
+ "engine": "InnoDB",
+ "field_order": [
+  "customer",
+  "crm_lead",
+  "recommendation_session",
+  "assigned_to",
+  "task",
+  "request_id",
+  "payload_hash",
+  "contact_value",
+  "channel",
+  "status",
+  "selected_items",
+  "preferred_time",
+  "customer_note",
+  "delivery_error",
+  "contact_consent",
+  "notification_status"
+ ],
+ "fields": [
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "crm_lead",
+   "fieldtype": "Link",
+   "label": "CRM Lead",
+   "options": "CRM Lead",
+   "read_only": 1
+  },
+  {
+   "fieldname": "recommendation_session",
+   "fieldtype": "Link",
+   "label": "Session",
+   "options": "Recommendation Session",
+   "read_only": 1
+  },
+  {
+   "fieldname": "assigned_to",
+   "fieldtype": "Link",
+   "label": "Assigned To",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "task",
+   "fieldtype": "Link",
+   "label": "CRM Task",
+   "options": "CRM Task",
+   "read_only": 1
+  },
+  {
+   "fieldname": "request_id",
+   "fieldtype": "Data",
+   "label": "Request ID",
+   "read_only": 1,
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "payload_hash",
+   "fieldtype": "Data",
+   "label": "Payload Hash",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "contact_value",
+   "fieldtype": "Data",
+   "label": "Confirmed Contact",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "channel",
+   "fieldtype": "Select",
+   "label": "Channel",
+   "options": "Phone\nEmail",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending Assignment\nOpen\nIn Progress\nCompleted\nDo Not Contact\nCanceled",
+   "default": "Pending Assignment",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "selected_items",
+   "fieldtype": "Long Text",
+   "label": "Confirmed Products",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "preferred_time",
+   "fieldtype": "Small Text",
+   "label": "Preferred Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer_note",
+   "fieldtype": "Small Text",
+   "label": "Customer Note",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delivery_error",
+   "fieldtype": "Small Text",
+   "label": "Delivery Error",
+   "read_only": 1
+  },
+  {
+   "fieldname": "contact_consent",
+   "fieldtype": "Check",
+   "label": "Contact Consent",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "notification_status",
+   "fieldtype": "Select",
+   "label": "Notification Status",
+   "options": "Pending\nSent\nFailed",
+   "default": "Pending",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "track_changes": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC"
+}

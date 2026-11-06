@@ -6,20 +6,19 @@
   <title>Hồ sơ của bạn · BeautyMatch</title>
   <link rel="icon" href="/assets/beautymatch/images/leaf.svg">
   <link rel="stylesheet" href="/assets/beautymatch/css/beautymatch.css">
-  <link rel="stylesheet" href="/assets/beautymatch/css/portal.css?v=consistency-2">
-  <script type="module" src="/assets/beautymatch/js/portal.mjs?v=consistency-2"></script>
+  <link rel="stylesheet" href="/assets/beautymatch/css/portal.css?v=self-service-20261107">
 </head>
 <body class="bm-portal" data-authenticated="{{ '1' if logged_in else '0' }}">
   <a class="skip-link" href="#main">Đến nội dung chính</a>
   <header class="portal-header"><a href="/beautymatch/portal" aria-label="BeautyMatch · Hồ sơ của bạn"><img src="/assets/beautymatch/images/leaf.svg" alt="">BeautyMatch</a><span>Không gian của bạn</span>{% if logged_in %}<button id="portal-logout" type="button">Đăng xuất</button>{% endif %}</header>
   <main id="main" class="portal-layout">
-    <aside class="portal-story"><p class="portal-eyebrow">CHĂM SÓC TỪ SỰ THẤU HIỂU</p><h1>Hiểu làn da.<br><em>Chọn điều phù hợp.</em></h1><p>Chia sẻ nhu cầu chăm sóc da của bạn. Chuyên viên BeautyMatch sẽ tiếp nhận hồ sơ và cùng bạn tìm sản phẩm phù hợp.</p><div class="portal-story-note">Hồ sơ của riêng bạn<br><span>Thông tin được gửi đến nhân viên tư vấn được phân quyền.</span></div></aside>
+    <aside class="portal-story"><p class="portal-eyebrow">CHĂM SÓC TỪ SỰ THẤU HIỂU</p><h1>Hiểu làn da.<br><em>Chọn điều phù hợp.</em></h1><p>Chia sẻ nhu cầu chăm sóc da của bạn. BeautyMatch tạo gợi ý ngay từ hồ sơ. Chuyên viên chỉ liên hệ khi bạn chủ động yêu cầu.</p><div class="portal-story-note">Hồ sơ của riêng bạn<br><span>Thông tin được gửi đến nhân viên tư vấn được phân quyền.</span></div></aside>
     <section class="portal-panel" aria-label="Hồ sơ khách hàng">
     {% if not logged_in %}
       <h2>Chào bạn trở lại</h2><p>Đăng nhập tài khoản khách hàng để gửi và cập nhật hồ sơ.</p>
-      <form id="portal-login"><label>Email<input name="usr" type="email" autocomplete="username" required></label><label>Mật khẩu<input name="pwd" type="password" autocomplete="current-password" required></label><button class="portal-primary" type="submit">Đăng nhập</button><p id="login-status" role="alert"></p></form>
+      <form id="portal-login"><label>Email hoặc tên đăng nhập<input name="usr" type="text" autocomplete="username" required></label><label>Mật khẩu<input name="pwd" type="password" autocomplete="current-password" required></label><button class="portal-primary" type="submit">Đăng nhập</button><p id="login-status" role="alert"></p></form>
     {% else %}
-      <h2>Hồ sơ làn da của bạn</h2><p>Mỗi lần gửi là một yêu cầu mới. Lịch sử tư vấn trước được giữ nguyên.</p>
+      <h2>Hồ sơ làn da của bạn</h2><p>Hiểu nhu cầu hiện tại, nhận gợi ý ngay. Mỗi phiên được lưu riêng trong lịch sử của bạn.</p>
       <p id="portal-status" role="status" aria-live="polite">Đang tải hồ sơ…</p><button id="portal-retry" type="button" hidden>Thử tải lại</button>
       <section id="portal-confirmation" class="portal-confirmation" role="status" hidden><h3></h3><p></p><small></small></section>
       <form id="portal-form" hidden novalidate>
@@ -28,11 +27,25 @@
         <fieldset><legend>03 · Điều bạn đang tìm kiếm</legend><div class="portal-fields"><label>Danh mục sản phẩm<select name="requested_category" required><option value="">Chọn danh mục</option></select></label><label>Ngân sách tối đa (VND)<input name="max_budget" type="number" min="1" step="any" required inputmode="numeric"></label><label>Thương hiệu ưa thích (không bắt buộc)<input name="preferred_brand" maxlength="140"></label></div><p class="portal-hint">Nhập ngân sách cho một sản phẩm, ví dụ 325000 tương đương 325.000 ₫.</p><p>Thành phần muốn tránh</p><div id="portal-avoids" class="portal-checks"></div></fieldset>
         <label class="portal-consent"><input name="consent" type="checkbox" required> Tôi đồng ý lưu thông tin và hồ sơ làn da để BeautyMatch tư vấn, chăm sóc khách hàng.</label>
         <p id="portal-budget-value" class="portal-hint" aria-live="polite"></p>
-        <button class="portal-primary" type="submit">Gửi yêu cầu tư vấn</button>
+        <button class="portal-primary" type="submit">Xem sản phẩm phù hợp</button>
       </form>
-      <section id="portal-requests" hidden><h3>Yêu cầu của bạn</h3><ul></ul><button id="portal-refresh" type="button">Cập nhật trạng thái</button></section>
+      <section><h3>Các phiên của bạn</h3><div id="portal-session-history" class="portal-session-history"></div></section>
+      <section id="portal-requests" hidden><details><summary>Yêu cầu tư vấn từ phiên bản trước</summary><ul></ul></details><button id="portal-refresh" type="button">Cập nhật trạng thái</button></section>
     {% endif %}
       <p class="portal-hint">BeautyMatch hỗ trợ lựa chọn sản phẩm chăm sóc da dựa trên nhu cầu đã cung cấp, không thay thế tư vấn hoặc chẩn đoán y tế.</p>
+      <button id="portal-asset-retry" type="button" hidden onclick="location.reload()">Thử tải lại giao diện</button>
+      <noscript><p>Vui lòng bật JavaScript để tải hồ sơ BeautyMatch.</p></noscript>
     </section>
+    {% if logged_in %}<section id="portal-discovery" class="portal-discovery" aria-label="Sản phẩm dành cho bạn" hidden></section>{% endif %}
   </main><footer class="portal-footer">BeautyMatch · Hiểu làn da, chăm sóc đúng.</footer>
+<script>
+  window.beautymatchPortalBootError = function () {
+    var status = document.getElementById('portal-status') || document.getElementById('login-status');
+    if (status) { status.textContent = 'Chưa tải được giao diện tư vấn. Kiểm tra kết nối và thử tải lại.'; status.dataset.error = '1'; }
+    var retry = document.getElementById('portal-asset-retry');
+    if (retry) retry.hidden = false;
+  };
+  setTimeout(function () { if (!window.beautymatchPortalBooted) window.beautymatchPortalBootError(); }, 10000);
+</script>
+{{ include_script('beautymatch_portal.bundle.js') }}
 </body></html>

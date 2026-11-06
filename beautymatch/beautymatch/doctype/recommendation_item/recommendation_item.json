@@ -31,7 +31,10 @@
   "customer_feedback",
   "rejection_reason",
   "feedback_date",
-  "follow_up_task"
+  "follow_up_task",
+  "feedback_source",
+  "feedback_by",
+  "key_ingredients_snapshot"
  ],
  "fields": [
   {
@@ -190,6 +193,26 @@
    "fieldtype": "Link",
    "label": "Follow Up Task",
    "options": "CRM Task"
+  },
+  {
+   "fieldname": "feedback_source",
+   "fieldtype": "Select",
+   "options": "\nCustomer\nStaff\nLegacy",
+   "label": "Feedback Source",
+   "read_only": 1
+  },
+  {
+   "fieldname": "feedback_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Feedback Recorded By",
+   "read_only": 1
+  },
+  {
+   "fieldname": "key_ingredients_snapshot",
+   "fieldtype": "Small Text",
+   "label": "Ingredient Snapshot",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,

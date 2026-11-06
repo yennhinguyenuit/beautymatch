@@ -214,24 +214,20 @@ class TestTask4FeedbackAPI(FrappeTestCase):
         self.settings.default_follow_up_due_days = 1
         self.settings.save(ignore_permissions=True)
 
-        self.role_patch = patch(
-            "beautymatch.api.feedback._check_consultation_role"
-        )
-        self.lead_patch = patch(
-            "beautymatch.api.feedback._check_lead_access"
-        )
-        self.permission_patch = patch(
-            "beautymatch.api.feedback.frappe.has_permission",
-            return_value=True,
-        )
+        # Full role/record permissions are exercised by the real Sales User
+        # audit. These Frappe unit fixtures use normal Administrator access.
+        self.contact_id = str(uuid4())
 
-        self.role_patch.start()
-        self.lead_patch.start()
-        self.permission_patch.start()
-
-        self.addCleanup(self.role_patch.stop)
-        self.addCleanup(self.lead_patch.stop)
-        self.addCleanup(self.permission_patch.stop)
+    def _contact(self):
+        from beautymatch.api.customer_care import request_staff_contact
+        contact = request_staff_contact(self.session.name, {
+            "request_id": self.contact_id, "item_ids": [self.item_id],
+            "channel": "Email", "contact_value": frappe.db.get_value("CRM Lead", self.crm_lead, "email"),
+            "contact_consent": 1,
+        })
+        doc = frappe.get_doc("BeautyMatch Contact Request", contact["request_id"])
+        self.assertEqual(contact["follow_up_status"], "CREATED", doc.delivery_error)
+        return doc.task
 
     def _feedback(self, choice, reason=None):
         return submit_feedback(
@@ -242,54 +238,37 @@ class TestTask4FeedbackAPI(FrappeTestCase):
         )
 
     def _task_count(self):
-        return frappe.db.count(
-            "CRM Task",
-            {"beautymatch_follow_up_key": self.follow_up_key},
-        )
+        return frappe.db.count("CRM Task", {"beautymatch_contact_request": self.contact_id})
 
-    def test_interested_creates_only_one_task_on_repeated_click(self):
+    def test_interested_requires_separate_consent_and_contact_retry_creates_one_task(self):
         first = self._feedback("Interested")
         second = self._feedback("Interested")
-
-        self.assertEqual(first["follow_up_status"], "CREATED")
-        self.assertEqual(second["follow_up_status"], "CREATED")
-        self.assertEqual(first["follow_up_task"], second["follow_up_task"])
+        self.assertEqual(first["follow_up_status"], "NOT_REQUESTED")
+        self.assertEqual(second["follow_up_status"], "NOT_REQUESTED")
+        self.assertEqual(self._task_count(), 0)
+        task_name = self._contact()
+        self.assertEqual(self._contact(), task_name)
         self.assertEqual(self._task_count(), 1)
+        self.assertEqual(frappe.db.get_value("CRM Task", task_name, "status"), "Todo")
 
-        task = frappe.get_doc("CRM Task", first["follow_up_task"])
-        self.assertEqual(task.status, "Todo")
-
-    def test_interested_to_not_interested_cancels_existing_task(self):
-        created = self._feedback("Interested")
-        task_name = created["follow_up_task"]
-
-        result = self._feedback(
-            "Not Interested",
-            "Muốn tìm lựa chọn khác",
-        )
-
-        self.assertEqual(result["follow_up_task"], task_name)
+    def test_preference_change_does_not_cancel_explicit_contact_task(self):
+        self._feedback("Interested")
+        task_name = self._contact()
+        self._feedback("Not Interested", "Muốn tìm lựa chọn khác")
         self.assertEqual(self._task_count(), 1)
+        self.assertEqual(frappe.db.get_value("CRM Task", task_name, "status"), "Todo")
 
+    def test_preference_change_does_not_reopen_a_canceled_task(self):
+        self._feedback("Interested")
+        task_name = self._contact()
         task = frappe.get_doc("CRM Task", task_name)
-        self.assertEqual(task.status, "Canceled")
-
-    def test_not_interested_to_interested_reopens_same_task(self):
-        created = self._feedback("Interested")
-        task_name = created["follow_up_task"]
-
-        self._feedback(
-            "Not Interested",
-            "Muốn tìm lựa chọn khác",
-        )
+        task.status = "Canceled"
+        task.save()
+        self._feedback("Not Interested", "Muốn tìm lựa chọn khác")
         result = self._feedback("Interested")
-
-        self.assertEqual(result["follow_up_status"], "CREATED")
-        self.assertEqual(result["follow_up_task"], task_name)
+        self.assertEqual(result["follow_up_status"], "NOT_REQUESTED")
         self.assertEqual(self._task_count(), 1)
-
-        task = frappe.get_doc("CRM Task", task_name)
-        self.assertEqual(task.status, "Todo")
+        self.assertEqual(frappe.db.get_value("CRM Task", task_name, "status"), "Canceled")
 
     def test_interested_without_assignee_saves_feedback_without_task(self):
         self.settings.default_follow_up_assignee = None
@@ -298,7 +277,7 @@ class TestTask4FeedbackAPI(FrappeTestCase):
         result = self._feedback("Interested")
 
         self.assertEqual(result["customer_feedback"], "Interested")
-        self.assertEqual(result["follow_up_status"], "PENDING")
+        self.assertEqual(result["follow_up_status"], "NOT_REQUESTED")
         self.assertIsNone(result["follow_up_task"])
         self.assertEqual(self._task_count(), 0)
 

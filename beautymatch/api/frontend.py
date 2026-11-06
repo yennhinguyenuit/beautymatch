@@ -77,7 +77,7 @@ def _item_context(session):
 		can_open = bool(task and frappe.has_permission("CRM Task", "read", doc=task))
 		items.append({
 			"item_id": row.name,
-			"follow_up_status": ("CREATED" if task and task.status != "Canceled" else "PENDING") if row.customer_feedback == "Interested" else "NOT_APPLICABLE",
+			"follow_up_status": ("CREATED" if task and task.status != "Canceled" else "NOT_REQUESTED") if row.customer_feedback == "Interested" else "NOT_APPLICABLE",
 			"task": {"name": str(task.name), "status": task.status, "url": "/app/crm-task/" + quote(str(task.name), safe="")} if can_open else None,
 		})
 	return items

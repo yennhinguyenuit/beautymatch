@@ -6,6 +6,7 @@ import StatePanel from "../components/StatePanel.vue";
 import { useBeautyMatch } from "../store.mjs";
 import { portalCall } from "../portal-api.mjs";
 import { date } from "../domain.mjs";
+import { careCall } from "../care-api.mjs";
 const store = useBeautyMatch();
 const router = useRouter();
 const search = ref("");
@@ -15,6 +16,16 @@ const loading = ref(false);
 const start = ref(0);
 const queue = ref(null),
 	queueError = ref("");
+const care = ref(null),
+	careError = ref("");
+async function loadCare() {
+	careError.value = "";
+	try {
+		care.value = await careCall("care_metrics");
+	} catch (e) {
+		careError.value = e.message;
+	}
+}
 async function loadQueue() {
 	queueError.value = "";
 	queue.value = null;
@@ -45,6 +56,7 @@ function open(lead, section) {
 onMounted(() => {
 	load();
 	loadQueue();
+	loadCare();
 });
 </script>
 <template>
@@ -63,15 +75,23 @@ onMounted(() => {
 	</div>
 	<div class="bm-native-panel bm-native-section-heading" style="margin-bottom: 24px">
 		<div>
-			<h2>{{ queue ? queue.total : "…" }} yêu cầu chờ tiếp nhận</h2>
-			<p>Tiếp nhận yêu cầu mới và bắt đầu tư vấn trên đúng CRM Lead.</p>
+			<h2>{{ care ? care.pending_requests : "…" }} yêu cầu liên hệ chờ chăm sóc</h2>
+			<p>
+				Khách đã nhận gợi ý và chủ động đồng ý được liên hệ. Tư vấn trực tiếp vẫn có thể
+				bắt đầu từ CRM Lead.
+			</p>
 		</div>
 		<Button
-			label="Tiếp nhận yêu cầu"
-			@click="router.push({ name: 'BeautyMatch', params: { section: 'requests' } })"
+			label="Mở yêu cầu liên hệ"
+			@click="router.push({ name: 'BeautyMatch', params: { section: 'care' } })"
 		/>
 	</div>
 	<StatePanel v-if="queueError" :error="queueError" @retry="loadQueue" />
+	<StatePanel v-if="careError" :error="careError" @retry="loadCare" />
+	<p v-if="queue?.total">
+		{{ queue.total }} yêu cầu chờ tiếp nhận từ phiên bản trước vẫn được giữ trong Yêu cầu tư
+		vấn cũ.
+	</p>
 	<ul v-if="queue?.requests.length" class="bm-native-panel bm-native-queue-preview">
 		<li v-for="entry in queue.requests.slice(0, 3)" :key="entry.name">
 			<strong>{{ entry.full_name }}</strong

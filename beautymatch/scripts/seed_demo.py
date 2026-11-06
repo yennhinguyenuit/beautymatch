@@ -106,6 +106,90 @@ def demo_payload(key):
     return data
 
 
+def repair_demo_assignments():
+    """Repair only verified seminar records and the explicitly reported QA Lead.
+
+    Never mass-reassign CRM records or change permission rules. Native Lead
+    save/assignment APIs apply CRM's owner, ToDo and sharing behavior.
+    """
+    _guard()
+    from frappe.desk.form.assign_to import remove
+    from frappe.desk.form.assign_to import _add as assign
+    staff = USERS["staff"][0]
+    seeded = json.loads((LOCAL / "seminar-data.json").read_text(encoding="utf-8"))
+    targets = {entry["crm_lead"]: demo_payload(key)["email"] for key, entry in seeded["customers"].items()}
+    target = "CRM-LEAD-2026-00038"
+    if frappe.db.exists("CRM Lead", target):
+        qa = frappe.get_doc("CRM Lead", target)
+        if (qa.first_name or "").startswith("BeautyMatch Native CRM QA sales-user ") and (qa.email or "").startswith("beautymatch-native-sales-user-") and qa.email.endswith("@example.invalid"):
+            targets[target] = qa.email
+    changed = []
+    for name, expected_email in targets.items():
+        lead = frappe.get_doc("CRM Lead", name, for_update=True)
+        if lead.email != expected_email or not expected_email.endswith("@example.invalid"):
+            frappe.throw("Lead không thuộc bộ demo đã xác minh; không tự phân công lại.")
+        owner = lead.lead_owner or ""
+        owned_demo = owner in {"", "Administrator", USERS["manager"][0], staff} or (owner.startswith("beautymatch-sidebar-qa-") and not frappe.db.get_value("User", owner, "enabled"))
+        if not owned_demo:
+            frappe.throw("Lead demo đang thuộc nhân viên ngoài bộ demo; cần kiểm tra riêng.")
+        modified = False
+        # CRM 1.86 clears lead_owner when ANY co-assignment is cancelled.
+        # Remove retired QA assignments first, then save the intended owner.
+        assigned = frappe.get_all("ToDo", filters={"reference_type": "CRM Lead", "reference_name": name, "status": "Open"}, pluck="allocated_to")
+        for user in assigned:
+            if user.startswith("beautymatch-sidebar-qa-") and not frappe.db.get_value("User", user, "enabled"):
+                remove("CRM Lead", name, user)
+                modified = True
+        lead = frappe.get_doc("CRM Lead", name, for_update=True)
+        if lead.lead_owner != staff:
+            lead.lead_owner = staff
+            lead.save()
+            modified = True
+        assigned = frappe.get_all("ToDo", filters={"reference_type": "CRM Lead", "reference_name": name, "status": "Open"}, pluck="allocated_to")
+        if staff not in assigned:
+            assign({"assign_to": [staff], "doctype": "CRM Lead", "name": name})
+            modified = True
+        if modified:
+            changed.append(name)
+        assert all(frappe.has_permission("CRM Lead", kind, doc=frappe.get_doc("CRM Lead", name), user=staff) for kind in ("read", "write"))
+    return {"verified_demo_leads": list(targets), "changed": changed, "assignee": staff}
+
+
+def configure_demo_logins():
+    """Explicit local operator action; seed itself never resets passwords.
+
+    Read the requested password from an ignored local file, never CLI output,
+    source code or a web endpoint. Preserve canonical emails/CRM relationships.
+    """
+    _guard()
+    path = LOCAL / "seminar-credentials.json"
+    credentials = json.loads(path.read_text(encoding="utf-8"))
+    password = json.loads((LOCAL / "demo-login-update.json").read_text(encoding="utf-8"))["password"]
+    if not isinstance(password, str) or not password:
+        frappe.throw("Thiếu mật khẩu demo do người vận hành cung cấp.")
+    aliases = {"customer": "khach", "staff": "tuvan", "manager": "quanly"}
+    for key, values in USERS.items():
+        if credentials.get(key, {}).get("username") != values[0]:
+            frappe.throw("Credentials không khớp bộ tài khoản demo hiện có.")
+        duplicate = frappe.db.get_value("User", {"username": aliases[key]}, "name")
+        if duplicate and duplicate != values[0]:
+            frappe.throw("Tên đăng nhập ngắn đã được sử dụng bởi tài khoản khác.")
+        doc = frappe.get_doc("User", values[0])
+        if doc.full_name != values[1] or doc.user_type != values[3] or values[2] not in frappe.get_roles(doc.name):
+            frappe.throw("Tài khoản không thuộc bộ demo đã xác minh.")
+    for key, values in USERS.items():
+        doc = frappe.get_doc("User", values[0])
+        doc.username = aliases[key]
+        doc.save()
+        update_password(doc.name, password, logout_all_sessions=True)
+        credentials[key].update({"password": password, "login": aliases[key]})
+    # Standard Frappe login option, not a role or record permission change.
+    frappe.db.set_single_value("System Settings", "allow_login_using_user_name", 1)
+    frappe.db.commit()
+    _write(path, credentials)
+    return {"updated": list(aliases.values()), "credentials_file": ".local/seminar-credentials.json", "administrator_unchanged": True}
+
+
 def catalog_report():
     products = frappe.get_all("Product Profile", fields=["*"], limit_page_length=0)
     research = [row for row in products if not row.product_code.startswith("BM-DEMO-")]
@@ -170,10 +254,19 @@ def seed_demo():
         frappe.set_user(USERS["customer"][0])
         data = demo_payload("A")
         data["request_id"] = str(uuid5(NAMESPACE_URL, "beautymatch-seminar-v1:customer-intake"))
-        result["customer_request"] = portal.submit_profile(data)
+        from beautymatch.api import self_service
+        data["request_id"] = str(uuid5(NAMESPACE_URL, "beautymatch-seminar-v2:self-service:A"))
+        own = self_service.recommend(data)
+        result["customer_result"] = {"session_id": own["session_id"], "request_id": own["request_id"]}
+        previous_path = LOCAL / "seminar-data.json"
+        if previous_path.exists():
+            previous = json.loads(previous_path.read_text(encoding="utf-8"))
+            if previous.get("customer_request"):
+                result["customer_request"] = previous["customer_request"]
     finally:
         frappe.set_user(actor)
     _write(LOCAL / "seminar-data.json", result)
+    repair_demo_assignments()
     return {"prepared": True, "data_file": ".local/seminar-data.json", "credentials_file": users["credentials_file"], "catalog": result["catalog"], "demo_customers": len(result["customers"])}
 
 
@@ -185,25 +278,35 @@ def inspect():
 
 
 def prepare_presentation():
-    """Leave an explicit, ready-to-accept A request; never rewrite old sessions."""
+    """Compatibility operator command uses the current self-service workflow."""
+    return prepare_self_service()
+
+
+def prepare_self_service():
+    """Leave a fresh unreviewed real Top 3; repeat calls reuse it, never create work."""
     _guard()
     from uuid import uuid4
+    from beautymatch.api import self_service
     target = demo_payload("A")
-    account = frappe.db.get_value("BeautyMatch Customer Account", {"user": USERS["customer"][0]}, "crm_lead")
-    current = frappe.get_doc("Beauty Profile", {"crm_lead": account})
-    pending = frappe.get_all("BeautyMatch Customer Request", filters={"customer": USERS["customer"][0], "status": "Pending"}, fields=["name", "payload_json"], order_by="creation desc", limit_page_length=1)
-    matching = all(current.get(field) == target[field] for field in recommendation.PROFILE_FIELDS)
-    if pending and matching and all(json.loads(pending[0].payload_json).get(field) == target[field] for field in recommendation.PROFILE_FIELDS):
-        return {"ready": True, "request_id": pending[0].name, "changed": False}
+    user = USERS["customer"][0]
+    lead = frappe.db.get_value("BeautyMatch Customer Account", {"user": user}, "crm_lead")
+    profile = frappe.get_doc("Beauty Profile", {"crm_lead": lead})
+    recent = frappe.get_all("Recommendation Session", filters={"customer_user": user}, fields=["name"], order_by="creation desc, name desc", limit_page_length=1)
+    if recent:
+        session = frappe.get_doc("Recommendation Session", recent[0].name)
+        matches = all(profile.get(field) == target[field] and json.loads(session.profile_snapshot).get(field) == target[field] for field in recommendation.PROFILE_FIELDS)
+        if matches and all(row.customer_feedback == "None" for row in session.recommendation_items) and not frappe.db.exists("BeautyMatch Contact Request", {"recommendation_session": session.name}):
+            return {"ready": True, "session_id": session.name, "changed": False}
     actor = frappe.session.user
     try:
-        frappe.set_user(USERS["customer"][0])
+        frappe.set_user(user)
         target["request_id"] = str(uuid4())
-        ack = portal.submit_profile(target)
+        result = self_service.recommend(target)
     finally:
         frappe.set_user(actor)
-    _write(LOCAL / "seminar-ready.json", ack)
-    return {"ready": True, "request_id": ack["request_id"], "changed": True}
+    ready = {"ready": True, "session_id": result["session_id"], "request_id": result["request_id"], "changed": True}
+    _write(LOCAL / "seminar-self-service-ready.json", ready)
+    return ready
 
 
 def verify_seed():
