@@ -45,11 +45,11 @@ def normalize_customer_payload(payload, email):
     return intake._validate_payload({**payload, "email": email.strip().lower()})
 
 
-def _account(user):
-    name = frappe.db.get_value("BeautyMatch Customer Account", {"user": user.name}, "crm_lead")
+def _account(user, for_update=False):
+    name = frappe.db.get_value("BeautyMatch Customer Account", {"user": user.name}, "crm_lead", for_update=for_update)
     if not name:
         return None
-    lead = frappe.get_doc("CRM Lead", name)
+    lead = frappe.get_doc("CRM Lead", name, for_update=for_update)
     if (lead.email or "").strip().lower() != user.email.strip().lower():
         _deny()
     return lead
@@ -96,22 +96,24 @@ def submit_profile(payload):
     # globally consistent request/contact locks (released on commit/rollback).
     intake._acquire_lock("portal-user", user.name)
     intake._lock_submission(data)
-    existing = frappe.db.exists("BeautyMatch Customer Request", data["request_id"])
+    # Locking reads see commits made while this transaction waited for the
+    # advisory lock (MariaDB REPEATABLE READ otherwise retains an old snapshot).
+    existing = frappe.db.get_value("BeautyMatch Customer Request", data["request_id"], "name", for_update=True)
     if existing:
-        request = frappe.get_doc("BeautyMatch Customer Request", existing)
+        request = frappe.get_doc("BeautyMatch Customer Request", existing, for_update=True)
         if request.customer != user.name:
             _deny()
         if request.payload_hash != intake._payload_hash(data):
             raise intake.RequestConflictError("Mã yêu cầu đã được dùng cho nội dung khác.")
         return _ack(request)
-    if frappe.db.exists("Consultation Submission", {"request_id": data["request_id"]}):
+    if frappe.db.get_value("Consultation Submission", {"request_id": data["request_id"]}, "name", for_update=True):
         frappe.throw("Mã yêu cầu không hợp lệ. Vui lòng gửi lại với yêu cầu mới.", frappe.ValidationError)
-    lead = _account(user)
+    lead = _account(user, for_update=True)
     found = intake._find_existing_lead(data)
     if lead and found and found != lead.name:
         _deny()
     if not lead and found:
-        candidate = frappe.get_doc("CRM Lead", found)
+        candidate = frappe.get_doc("CRM Lead", found, for_update=True)
         # A phone number alone is never proof of ownership of an existing Lead.
         if (candidate.email or "").strip().lower() != user.email.strip().lower():
             _deny()
@@ -130,8 +132,8 @@ def submit_profile(payload):
             "doctype": "CRM Lead", "first_name": data["full_name"], "email": data["email"],
             "mobile_no": data["phone"], "status": "New", "lead_owner": assignee,
         }).insert(ignore_permissions=True)
-    if not frappe.db.exists("BeautyMatch Customer Account", {"user": user.name}):
-        if frappe.db.exists("BeautyMatch Customer Account", {"crm_lead": lead.name}):
+    if not frappe.db.get_value("BeautyMatch Customer Account", {"user": user.name}, "name", for_update=True):
+        if frappe.db.get_value("BeautyMatch Customer Account", {"crm_lead": lead.name}, "name", for_update=True):
             _deny()
         frappe.get_doc({"doctype": "BeautyMatch Customer Account", "user": user.name, "crm_lead": lead.name}).insert(ignore_permissions=True)
     profile = intake._save_profile(data, lead.name)
@@ -145,20 +147,27 @@ def submit_profile(payload):
         "beauty_profile": profile.name, "profile_version": str(profile.modified),
         "response_json": json.dumps(receipt, ensure_ascii=False),
     }).insert(ignore_permissions=True)
-    # Preserve completed history; only unaccepted older requests are superseded.
-    for name in frappe.get_all("BeautyMatch Customer Request", filters={"customer": user.name, "status": "Pending"}, pluck="name"):
-        frappe.db.set_value("BeautyMatch Customer Request", name, "status", "Superseded")
     request = frappe.get_doc({
         "doctype": "BeautyMatch Customer Request", "request_id": data["request_id"],
         "customer": user.name, "crm_lead": lead.name, "beauty_profile": profile.name,
         "profile_version": str(profile.modified), "status": "Pending",
         "payload_hash": intake._payload_hash(data), "payload_json": json.dumps(data, ensure_ascii=False),
     }).insert(ignore_permissions=True)
+    # The same customer lock is held by every staff transition. Never leave an
+    # accepted A looking actionable after B updates the single current profile.
+    previous = frappe.db.sql(
+        "SELECT name FROM `tabBeautyMatch Customer Request` WHERE customer=%s AND status IN ('Pending', 'In Progress') AND name!=%s FOR UPDATE",
+        (user.name, request.name),
+    )
+    for (name,) in previous:
+        frappe.db.set_value("BeautyMatch Customer Request", name, {
+            "status": "Superseded", "superseded_by": request.name,
+        })
     return _ack(request)
 
 
 @frappe.whitelist(methods=["POST"])
-def list_requests(status="Pending", start=0):
+def list_requests(status="Pending", start=0, search=""):
     intake._check_consultation_role()
     if status not in STATES:
         frappe.throw("Trạng thái yêu cầu không hợp lệ.", frappe.ValidationError)
@@ -166,17 +175,36 @@ def list_requests(status="Pending", start=0):
         start = max(0, min(100000, int(start)))
     except (TypeError, ValueError):
         frappe.throw("Phân trang không hợp lệ.", frappe.ValidationError)
+    if not isinstance(search, str) or len(search) > 140:
+        frappe.throw("Từ khóa tìm kiếm không hợp lệ.", frappe.ValidationError)
     leads = frappe.get_list("CRM Lead", pluck="name", limit_page_length=0)
+    filters = {"crm_lead": ["in", leads], "status": status}
+    # Search the submitted name, never the newer mutable Lead/profile name.
+    if search.strip() and leads:
+        placeholders = ",".join(["%s"] * len(leads))
+        matching = frappe.db.sql(
+            f"SELECT name FROM `tabBeautyMatch Customer Request` WHERE crm_lead IN ({placeholders}) AND status=%s AND (name LIKE %s OR JSON_UNQUOTE(JSON_EXTRACT(payload_json, '$.full_name')) LIKE %s)",
+            (*leads, status, f"%{search.strip()}%", f"%{search.strip()}%"),
+        )
+        if not matching:
+            return {"requests": [], "has_more": False, "start": start, "total": 0}
+        filters["name"] = ["in", [row[0] for row in matching]]
+    total = frappe.get_all("BeautyMatch Customer Request", filters=filters, fields=["count(name) as total"])[0].total if leads else 0
     rows = frappe.get_all(
-        "BeautyMatch Customer Request", filters={"crm_lead": ["in", leads], "status": status},
+        "BeautyMatch Customer Request", filters=filters,
         fields=["name", "crm_lead", "beauty_profile", "status", "assigned_to", "creation", "payload_json"],
-        order_by="creation desc", start=start, limit_page_length=21,
+        order_by="creation desc, name desc", start=start, limit_page_length=21,
     ) if leads else []
     result = []
     for row in rows[:20]:
         snapshot = json.loads(row.pop("payload_json"))
-        result.append({**row, "full_name": snapshot["full_name"], "profile": {field: snapshot.get(field) for field in PROFILE_FIELDS}})
-    return {"requests": result, "has_more": len(rows) > 20, "start": start}
+        writable = frappe.has_permission("CRM Lead", "write", doc=frappe.get_doc("CRM Lead", row.crm_lead))
+        result.append({**row, "submitted_at": _timestamp(row.creation),
+            "assigned_name": frappe.db.get_value("User", row.assigned_to, "full_name") if row.assigned_to else None,
+            "can_accept": bool(writable and row.status == "Pending" and not row.assigned_to),
+            "can_continue": bool(writable and row.status == "In Progress" and row.assigned_to == frappe.session.user),
+            "full_name": snapshot["full_name"], "profile": {field: snapshot.get(field) for field in PROFILE_FIELDS}})
+    return {"requests": result, "has_more": len(rows) > 20, "start": start, "total": total}
 
 
 def _staff_request(request_id):
@@ -185,35 +213,118 @@ def _staff_request(request_id):
         _deny()
     request = frappe.get_doc("BeautyMatch Customer Request", request_id)
     intake._check_lead_access(request.crm_lead)
+    # Same lock order as customer submit: account -> request -> contact/profile.
+    intake._acquire_lock("portal-user", request.customer)
     intake._acquire_lock("portal-request", request.name)
     request = frappe.get_doc("BeautyMatch Customer Request", request.name, for_update=True)
     intake._check_lead_access(request.crm_lead)
-    if request.assigned_to and request.assigned_to != frappe.session.user and not set(frappe.get_roles()).intersection({"Sales Manager", "System Manager"}):
-        _deny()
     return request
+
+
+def _conflict(message):
+    frappe.throw(message, exc=intake.RequestConflictError)
+
+
+def _owner(request):
+    if request.assigned_to != frappe.session.user:
+        _conflict("Yêu cầu đã được nhân viên khác tiếp nhận. Vui lòng tải lại danh sách.")
+
+
+def _version(request, expected):
+    profile = frappe.get_doc("Beauty Profile", request.beauty_profile, for_update=True)
+    if str(profile.modified) != str(expected):
+        _conflict("Hồ sơ đã thay đổi. Hãy tải lại yêu cầu mới nhất trước khi tư vấn.")
+
+
+def _request_view(request):
+    snapshot = json.loads(request.payload_json)
+    return {**_ack(request), "crm_lead": request.crm_lead,
+        "assigned_to": request.assigned_to, "superseded_by": request.superseded_by,
+        "snapshot": snapshot, "profile_version": request.profile_version,
+        "session_id": request.recommendation_session,
+        "can_continue": request.status == "In Progress" and request.assigned_to == frappe.session.user}
+
+
+@frappe.whitelist(methods=["POST"])
+def get_request(request_id=None, session_id=None):
+    """Server recovery; no browser storage is needed to resume a claimed request."""
+    intake._check_consultation_role()
+    if session_id and not request_id:
+        session = frappe.get_doc("Recommendation Session", session_id)
+        intake._check_lead_access(session.crm_lead)
+        request_id = frappe.db.get_value("BeautyMatch Customer Request", {"recommendation_session": session.name}, "name")
+        if not request_id:
+            return None
+    return _request_view(_staff_request(request_id))
 
 
 @frappe.whitelist(methods=["POST"])
 def accept_request(request_id):
     request = _staff_request(request_id)
     if request.status not in {"Pending", "In Progress"}:
-        frappe.throw("Yêu cầu không còn chờ tư vấn. Vui lòng tải lại danh sách.", frappe.ValidationError)
+        _conflict("Yêu cầu không còn chờ tư vấn hoặc đã có yêu cầu mới hơn. Vui lòng tải lại danh sách.")
+    if request.assigned_to and request.assigned_to != frappe.session.user:
+        _owner(request)
+    if not request.recommendation_session:
+        _version(request, request.profile_version)
     request.status = "In Progress"
     request.assigned_to = frappe.session.user
     request.save(ignore_permissions=True)
-    return {"request_id": request.name, "crm_lead": request.crm_lead, "status": request.status}
+    return _request_view(request)
+
+
+@frappe.whitelist(methods=["POST"])
+def generate_for_request(request_id, payload):
+    """Atomically bind an explicitly confirmed consultation to its request.
+
+    Original snapshot/version stay immutable. A staff edit creates a separate
+    TASK 2 submission/version. Session association commits before completion.
+    """
+    from beautymatch.api.frontend import save_consultation
+    from beautymatch.api.recommendation import generate_recommendations, get_recommendation_result
+    request = _staff_request(request_id)
+    _owner(request)
+    data = intake._validate_payload(payload)
+    if request.recommendation_session:
+        if intake._payload_hash(data) != request.consultation_hash:
+            _conflict("Yêu cầu đã có kết quả. Hãy mở lại kết quả đã lưu; không gửi nội dung khác.")
+        return {"receipt": json.loads(request.consultation_receipt), "result": get_recommendation_result(request.recommendation_session)}
+    if request.status != "In Progress":
+        _conflict("Yêu cầu đã có yêu cầu mới hơn hoặc không còn đang tư vấn. Hãy tải lại danh sách.")
+    # Match TASK 2's contact -> Lead -> profile lock order. Do not hold the
+    # profile lock while waiting for a generic staff intake's contact lock.
+    intake._lock_submission(data)
+    lead = frappe.get_doc("CRM Lead", request.crm_lead, for_update=True)
+    lead.check_permission("read")
+    lead.check_permission("write")
+    _version(request, request.profile_version)
+    if frappe.db.get_value("Consultation Submission", {"request_id": data["request_id"]}, "name", for_update=True):
+        _conflict("Mã phiên tư vấn đã được dùng. Hãy mở kết quả cũ hoặc xác nhận một phiên mới cho yêu cầu này.")
+    receipt = save_consultation(data, request.crm_lead)
+    identifiers = {key: receipt[key] for key in ("crm_lead", "beauty_profile", "request_id", "profile_version")}
+    result = generate_recommendations(**identifiers)
+    request.consultation_receipt = json.dumps(identifiers)
+    request.consultation_hash = intake._payload_hash(data)
+    request.recommendation_session = result["session_id"]
+    request.save(ignore_permissions=True)
+    return {"receipt": identifiers, "result": result}
 
 
 @frappe.whitelist(methods=["POST"])
 def complete_request(request_id, session_id):
     request = _staff_request(request_id)
+    _owner(request)
     session = frappe.get_doc("Recommendation Session", session_id)
-    if session.crm_lead != request.crm_lead or session.beauty_profile != request.beauty_profile or session.creation < request.creation:
+    if request.recommendation_session != session.name or not request.consultation_receipt:
+        _conflict("Kết quả không thuộc phiên tư vấn đã xác nhận của yêu cầu này.")
+    receipt = json.loads(request.consultation_receipt)
+    if session.crm_lead != request.crm_lead or session.beauty_profile != request.beauty_profile or session.request_id != receipt["request_id"]:
         _deny()
     if request.status == "Completed" and request.recommendation_session == session.name:
         return {"status": "Completed"}
-    if request.status != "In Progress" or session.owner != frappe.session.user:
-        _deny()
+    if request.status != "In Progress":
+        _conflict("Yêu cầu đã có yêu cầu mới hơn. Kết quả cũ được giữ trong lịch sử; hãy tiếp nhận yêu cầu mới.")
+    _version(request, receipt["profile_version"])
     request.status = "Completed"
     request.recommendation_session = session.name
     request.save(ignore_permissions=True)

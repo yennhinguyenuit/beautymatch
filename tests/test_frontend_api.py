@@ -68,6 +68,25 @@ class TestFrontendProjection(unittest.TestCase):
 		self.module.read("get_customer_history", {"crm_lead": "L", "start": 20, "limit": 20})
 		self.recommendation.get_customer_history.assert_called_once_with(crm_lead="L", start=20, limit=20)
 
+	def test_feedback_filter_precedes_pagination_and_uses_filtered_count(self):
+		self.module.get_customer_context = Mock(return_value={"crm_lead": "LEAD-1"})
+		self.frappe.db.sql.side_effect = [[(31,)], [SimpleNamespace(name="OLD-FEEDBACK")]]
+		self.recommendation.get_recommendation_result.return_value = {"session_id": "OLD-FEEDBACK", "results": []}
+		self.frappe.get_doc.return_value = SimpleNamespace(creation="2026-11-05T10:00:00+07:00", recommendation_items=[])
+		history = self.module.get_customer_view("LEAD-1", start=20, feedback_only=True)["history"]
+		self.assertEqual(history["total"], 31)
+		self.assertEqual(history["sessions"][0]["session_id"], "OLD-FEEDBACK")
+		query, params = self.frappe.db.sql.call_args.args
+		self.assertLess(query.index("EXISTS"), query.index("LIMIT"))
+		self.assertEqual(params, ("LEAD-1", 10, 20))
+		self.recommendation.get_customer_history.assert_not_called()
+
+	def test_feedback_history_checks_lead_access_before_sql(self):
+		self.profile._check_lead_access.side_effect = PermissionError
+		with self.assertRaises(PermissionError):
+			self.module.get_customer_view("OTHER", feedback_only=True)
+		self.frappe.db.sql.assert_not_called()
+
 	def test_dashboard_delegates_task4_metrics_without_changing_semantics(self):
 		result = self.module.get_dashboard_data()
 		self.assertIs(result, self.dashboard.get_dashboard_data.return_value)

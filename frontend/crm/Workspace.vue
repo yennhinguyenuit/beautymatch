@@ -20,16 +20,28 @@ store.syncSelection();
 const tabs = [
 	["", "Tổng quan"],
 	["requests", "Yêu cầu tư vấn"],
-	["consultation", "Phiên tư vấn"],
-	["customer", "Hồ sơ da"],
-	["feedback", "Phản hồi khách hàng"],
-	["dashboard", "Báo cáo tư vấn"],
+	["customer", "Khách hàng & lịch sử"],
+	["dashboard", "Báo cáo"],
 ];
 const section = computed(() => route.params.section || "");
-const title = computed(() =>
-	section.value === "result"
-		? "Kết quả tư vấn"
-		: tabs.find(([key]) => key === section.value)?.[1] || "BeautyMatch",
+const activeTab = computed(() =>
+	["consultation", "result"].includes(section.value)
+		? store.request
+			? "requests"
+			: "customer"
+		: section.value === "feedback"
+			? "customer"
+			: section.value,
+);
+const title = computed(
+	() =>
+		({
+			consultation: "Phiên tư vấn",
+			result: "Kết quả tư vấn",
+			feedback: "Phản hồi khách hàng",
+		})[section.value] ||
+		tabs.find(([key]) => key === section.value)?.[1] ||
+		"BeautyMatch",
 );
 const view = computed(
 	() =>
@@ -67,11 +79,7 @@ const to = (key) => ({ name: "BeautyMatch", params: { section: key || undefined 
 				v-for="[key, label] in tabs"
 				:key="key"
 				:to="to(key)"
-				:aria-current="
-					section === key || (key === 'consultation' && section === 'result')
-						? 'page'
-						: undefined
-				"
+				:aria-current="activeTab === key ? 'page' : undefined"
 				>{{ label }}</RouterLink
 			>
 		</nav>

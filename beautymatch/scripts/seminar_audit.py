@@ -57,7 +57,8 @@ def verify():
         accepted = portal.accept_request(request["request_id"])
         assert accepted["crm_lead"] == lead
         data["request_id"] = str(uuid4())
-        receipt = frontend.save_consultation(data, lead)
+        bound = portal.generate_for_request(request["request_id"], data)
+        receipt = bound["receipt"]
         args = {field: receipt[field] for field in ("crm_lead", "beauty_profile", "profile_version", "request_id")}
         session = recommendation.generate_recommendations(**args)
         assert len(session["results"]) == 3
@@ -83,6 +84,14 @@ def verify():
         other_item = session["results"][1]["item_id"]
         assert feedback.submit_feedback(session["session_id"], other_item, "Interested")["follow_up_status"] == "PENDING"
         frappe.db.set_single_value("BeautyMatch Settings", "default_follow_up_assignee", USERS["staff"][0])
+        due_days = frappe.db.get_single_value("BeautyMatch Settings", "default_follow_up_due_days")
+        frappe.db.set_single_value("BeautyMatch Settings", "default_follow_up_due_days", 366)
+        failed_item = session["results"][2]["item_id"]
+        denied(feedback.submit_feedback, session["session_id"], failed_item, "Interested")
+        assert not frappe.db.get_value("Recommendation Item", failed_item, "follow_up_task")
+        assert frappe.db.get_value("Recommendation Item", failed_item, "customer_feedback") == "None"
+        frappe.db.set_single_value("BeautyMatch Settings", "default_follow_up_due_days", due_days)
+        checks.append("Actual invalid follow-up configuration rejects Task creation; no CREATED response, feedback mutation or Task is persisted")
         assert frappe.get_doc("Recommendation Session", old["name"]).as_dict() == old
         assert recommendation.get_customer_history(lead)["total"] >= 2
         assert not recommendation.get_recommendation_result(seeded["customers"]["C"]["session_id"])["results"]

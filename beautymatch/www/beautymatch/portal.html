@@ -6,8 +6,8 @@
   <title>Hồ sơ của bạn · BeautyMatch</title>
   <link rel="icon" href="/assets/beautymatch/images/leaf.svg">
   <link rel="stylesheet" href="/assets/beautymatch/css/beautymatch.css">
-  <link rel="stylesheet" href="/assets/beautymatch/css/portal.css?v=seminar-1">
-  <script type="module" src="/assets/beautymatch/js/portal.mjs?v=seminar-1"></script>
+  <link rel="stylesheet" href="/assets/beautymatch/css/portal.css?v=consistency-2">
+  <script type="module" src="/assets/beautymatch/js/portal.mjs?v=consistency-2"></script>
 </head>
 <body class="bm-portal" data-authenticated="{{ '1' if logged_in else '0' }}">
   <a class="skip-link" href="#main">Đến nội dung chính</a>
@@ -21,15 +21,18 @@
     {% else %}
       <h2>Hồ sơ làn da của bạn</h2><p>Mỗi lần gửi là một yêu cầu mới. Lịch sử tư vấn trước được giữ nguyên.</p>
       <p id="portal-status" role="status" aria-live="polite">Đang tải hồ sơ…</p><button id="portal-retry" type="button" hidden>Thử tải lại</button>
-      <form id="portal-form" hidden>
+      <section id="portal-confirmation" class="portal-confirmation" role="status" hidden><h3></h3><p></p><small></small></section>
+      <form id="portal-form" hidden novalidate>
         <fieldset><legend>01 · Thông tin của bạn</legend><div class="portal-fields"><label>Họ và tên<input name="full_name" required maxlength="140" autocomplete="name"></label><label>Email tài khoản<input name="email" type="email" readonly autocomplete="email"></label><label>Số điện thoại (không bắt buộc)<input name="phone" type="tel" autocomplete="tel" maxlength="30"></label></div><p class="portal-hint">Email được xác định từ tài khoản đăng nhập để bảo vệ hồ sơ. Liên hệ đã lưu cần được chuyên viên xác minh trước khi thay đổi.</p></fieldset>
         <fieldset><legend>02 · Làn da hiện tại</legend><div class="portal-fields"><label>Loại da<select name="skin_type" required><option value="">Chọn loại da</option></select></label><label>Độ nhạy cảm<select name="sensitivity" required><option value="">Chọn độ nhạy cảm</option><option value="Sensitive">Da nhạy cảm</option><option value="Not specifically sensitive">Không đặc biệt nhạy cảm</option></select></label></div><p class="portal-hint">Da dầu thường bóng dầu; da khô dễ căng; da hỗn hợp có vùng chữ T dầu và hai má khô. Chọn mô tả gần nhất.</p><p id="portal-concern-count">Mối quan tâm · chọn 1–3 vấn đề</p><div id="portal-concerns" class="portal-checks"></div></fieldset>
         <fieldset><legend>03 · Điều bạn đang tìm kiếm</legend><div class="portal-fields"><label>Danh mục sản phẩm<select name="requested_category" required><option value="">Chọn danh mục</option></select></label><label>Ngân sách tối đa (VND)<input name="max_budget" type="number" min="1" step="any" required inputmode="numeric"></label><label>Thương hiệu ưa thích (không bắt buộc)<input name="preferred_brand" maxlength="140"></label></div><p class="portal-hint">Nhập ngân sách cho một sản phẩm, ví dụ 325000 tương đương 325.000 ₫.</p><p>Thành phần muốn tránh</p><div id="portal-avoids" class="portal-checks"></div></fieldset>
         <label class="portal-consent"><input name="consent" type="checkbox" required> Tôi đồng ý lưu thông tin và hồ sơ làn da để BeautyMatch tư vấn, chăm sóc khách hàng.</label>
+        <p id="portal-budget-value" class="portal-hint" aria-live="polite"></p>
         <button class="portal-primary" type="submit">Gửi yêu cầu tư vấn</button>
       </form>
       <section id="portal-requests" hidden><h3>Yêu cầu của bạn</h3><ul></ul><button id="portal-refresh" type="button">Cập nhật trạng thái</button></section>
     {% endif %}
+      <p class="portal-hint">BeautyMatch hỗ trợ lựa chọn sản phẩm chăm sóc da dựa trên nhu cầu đã cung cấp, không thay thế tư vấn hoặc chẩn đoán y tế.</p>
     </section>
   </main><footer class="portal-footer">BeautyMatch · Hiểu làn da, chăm sóc đúng.</footer>
 </body></html>

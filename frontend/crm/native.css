@@ -487,6 +487,30 @@ html[data-theme="dark"] .bm-native-concern-layout {
 	color: #68451f;
 	margin-top: 8px;
 }
+.bm-native-queue-preview {
+	list-style: none;
+	margin: 0 0 24px;
+}
+.bm-native-queue-preview li {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 12px;
+	padding: 12px 0;
+	border-bottom: 1px solid var(--outline-gray-2);
+}
+.bm-native-queue-preview li span {
+	flex: 1;
+	color: var(--ink-gray-6);
+	font-size: 12px;
+}
+.bm-native-filter {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+	margin-bottom: 20px;
+	min-height: 44px;
+}
 .bm-native-skeleton {
 	width: 80%;
 	max-width: 520px;

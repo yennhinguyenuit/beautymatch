@@ -1,11 +1,13 @@
 <script setup>
-import { onMounted, ref } from "vue";
+import { onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { Button, FormControl } from "frappe-ui";
 import StatePanel from "../components/StatePanel.vue";
 import ProfileSummary from "../components/ProfileSummary.vue";
 import { useBeautyMatch } from "../store.mjs";
 import { portalCall } from "../portal-api.mjs";
+import { latestRequest } from "../latest-request.mjs";
+import { date } from "../domain.mjs";
 const store = useBeautyMatch(),
 	router = useRouter();
 const statuses = {
@@ -20,16 +22,26 @@ const status = ref("Pending"),
 	error = ref(""),
 	pending = ref(""),
 	start = ref(0);
+const search = ref("");
+const next = latestRequest();
+onUnmounted(next);
 async function load(offset = 0) {
+	const current = next();
 	loading.value = true;
 	error.value = "";
+	data.value = null;
+	start.value = offset;
 	try {
-		data.value = await portalCall("list_requests", { status: status.value, start: offset });
-		start.value = offset;
+		const reply = await portalCall("list_requests", {
+			status: status.value,
+			start: offset,
+			search: search.value,
+		});
+		if (current()) data.value = reply;
 	} catch (e) {
-		error.value = e.message;
+		if (current()) error.value = e.message;
 	} finally {
-		loading.value = false;
+		if (current()) loading.value = false;
 	}
 }
 async function accept(request) {
@@ -38,9 +50,11 @@ async function accept(request) {
 	error.value = "";
 	try {
 		const reply = await portalCall("accept_request", { request_id: request.name });
-		store.selectLead(reply.crm_lead);
-		sessionStorage.setItem("beautymatch_staff_request_v1", JSON.stringify(reply));
-		await router.push({ name: "BeautyMatch", params: { section: "consultation" } });
+		store.acceptRequest(reply);
+		await router.push({
+			name: "BeautyMatch",
+			params: { section: reply.session_id ? "result" : "consultation" },
+		});
 	} catch (e) {
 		error.value = e.message;
 	} finally {
@@ -52,6 +66,7 @@ function open(request) {
 	router.push({ name: "BeautyMatch", params: { section: "customer" } });
 }
 onMounted(() => load());
+watch(status, () => load(0));
 </script>
 <template>
 	<div class="bm-native-intro">
@@ -69,6 +84,11 @@ onMounted(() => load());
 	</div>
 	<form class="bm-native-toolbar" @submit.prevent="load(0)">
 		<FormControl
+			v-model="search"
+			label="Tìm yêu cầu"
+			placeholder="Tên khách hoặc mã yêu cầu"
+		/>
+		<FormControl
 			v-model="status"
 			type="select"
 			label="Trạng thái yêu cầu"
@@ -76,7 +96,7 @@ onMounted(() => load());
 		/><Button label="Xem yêu cầu" type="submit" :loading="loading" />
 	</form>
 	<StatePanel v-if="loading" loading />
-	<p v-if="error" class="bm-native-error" role="alert">{{ error }}</p>
+	<StatePanel v-if="error" :error="error" @retry="load(start)" />
 	<StatePanel
 		v-if="!loading && data && !data.requests.length"
 		title="Chưa có yêu cầu trong nhóm này"
@@ -94,10 +114,12 @@ onMounted(() => load());
 					<p class="bm-native-eyebrow">{{ statuses[request.status] }}</p>
 					<h2>{{ request.full_name }}</h2>
 					<p>CRM Lead · {{ request.crm_lead }}</p>
+					<p>{{ date(request.submitted_at) }} · Mã {{ request.name.slice(0, 8) }}</p>
+					<p>Phụ trách: {{ request.assigned_name || "Chưa tiếp nhận" }}</p>
 				</div>
 				<div class="bm-native-actions">
 					<Button
-						v-if="['Pending', 'In Progress'].includes(request.status)"
+						v-if="request.can_accept || request.can_continue"
 						:label="
 							request.status === 'Pending' ? 'Tiếp nhận tư vấn' : 'Tiếp tục tư vấn'
 						"
@@ -115,7 +137,7 @@ onMounted(() => load());
 				label="Trang trước"
 				:disabled="start === 0"
 				@click="load(Math.max(0, start - 20))"
-			/><span>Trang {{ Math.floor(start / 20) + 1 }}</span
+			/><span>Trang {{ Math.floor(start / 20) + 1 }} · {{ data.total }} yêu cầu</span
 			><Button label="Trang tiếp" :disabled="!data.has_more" @click="load(start + 20)" />
 		</div>
 	</div>

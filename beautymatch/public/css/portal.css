@@ -206,6 +206,40 @@
 	padding: 20px;
 	font-size: 13px;
 }
+.portal-confirmation {
+	background: #edf3e6;
+	border: 1px solid #b8cbaa;
+	border-radius: 20px;
+	padding: 20px;
+	margin: 18px 0;
+	overflow-wrap: anywhere;
+}
+.portal-confirmation h3 {
+	margin: 0 0 8px;
+	font-size: 18px;
+}
+.portal-panel .portal-field-error {
+	color: #9d3023;
+	font-size: 12px;
+	line-height: 1.5;
+}
+.portal-panel [aria-invalid="true"] {
+	border-color: #9d3023;
+}
+.portal-panel {
+	min-width: 0;
+}
+.portal-header {
+	flex-wrap: wrap;
+}
+.portal-panel input,
+.portal-panel select {
+	scroll-margin: 90px;
+}
+#portal-budget-value {
+	font-weight: 650;
+	color: #176b5b;
+}
 .bm-portal :focus-visible {
 	outline: 3px solid #176b5b;
 	outline-offset: 4px;

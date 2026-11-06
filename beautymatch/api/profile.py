@@ -302,7 +302,11 @@ def _check_consultation_role():
 def _save_lead(data, lead_name):
     """Create a CRM Lead, or update the permitted fields of an existing one."""
     if lead_name:
-        lead = _check_lead_access(lead_name)
+        # _find_existing_lead has already locked this row. Use a current read
+        # after that wait, and authorize the current ownership/assignment.
+        lead = frappe.get_doc("CRM Lead", lead_name, for_update=True)
+        lead.check_permission("read")
+        lead.check_permission("write")
         _check_lead_identity(lead, data)
 
         changed = False
@@ -350,7 +354,9 @@ def _save_profile(data, lead_name):
     profile_name = existing_profiles[0].name if existing_profiles else None
 
     if profile_name:
-        profile = frappe.get_doc("Beauty Profile", profile_name)
+        # Read the current committed version after waiting on the row lock.
+        # A non-locking read may retain the transaction's older snapshot.
+        profile = frappe.get_doc("Beauty Profile", profile_name, for_update=True)
         is_new = False
     else:
         profile = frappe.new_doc("Beauty Profile")

@@ -385,12 +385,13 @@ async function flow(context, identity, usr, profile) {
   );
   await snapshot(page, `${identity}-history`);
   await page
-    .getByRole("link", { name: "Phản hồi khách hàng", exact: true })
+    .getByRole("link", { name: "Khách hàng & lịch sử", exact: true })
     .click();
+  await page.getByLabel("Chỉ phiên có phản hồi", { exact: true }).check();
   await page.locator(".bm-native-session").first().waitFor();
   await proveHost(page, marker);
   await snapshot(page, `${identity}-feedback`);
-  await page.getByRole("link", { name: "Báo cáo tư vấn", exact: true }).click();
+  await page.getByRole("link", { name: "Báo cáo", exact: true }).click();
   await page.locator('[data-metric="total_sessions"] strong').waitFor();
   const dashboard = await api(
     page,
@@ -542,11 +543,12 @@ async function responsiveChecks(adminPwd, session) {
       )
         return;
       sessionStorage.setItem(
-        "beautymatch_customer_v1",
-        JSON.stringify({ crm_lead: value.lead }),
+        "beautymatch_native_v2:lead",
+        JSON.stringify(value.lead),
       );
+      sessionStorage.setItem("beautymatch_native_v2:owner", "Administrator");
       sessionStorage.setItem(
-        "beautymatch_open_session_v1",
+        "beautymatch_native_v2:opened",
         JSON.stringify({ crm_lead: value.lead, session_id: value.session }),
       );
     }, session);
@@ -583,7 +585,7 @@ async function responsiveChecks(adminPwd, session) {
     await page.evaluate(() => window.__nativeBeautyMatchTest),
     "mobile-host",
   );
-  await page.getByRole("link", { name: "Báo cáo tư vấn", exact: true }).click();
+  await page.getByRole("link", { name: "Báo cáo", exact: true }).click();
   await page.locator('[data-metric="total_sessions"]').waitFor();
   await snapshot(page, "native-mobile-dashboard");
   report.checks.push(

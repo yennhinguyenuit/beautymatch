@@ -127,8 +127,8 @@ export function createLiveApi({
       call("get_workspace", { search, start }, "POST"),
     customerContext: (lead) =>
       call("get_customer_context", { crm_lead: lead }, "POST"),
-    customerView: (lead, start = 0) =>
-      call("get_customer_view", { crm_lead: lead, start }, "POST"),
+    customerView: (lead, start = 0, feedback_only = false) =>
+      call("get_customer_view", { crm_lead: lead, start, feedback_only }, "POST"),
     scenarios: () => call("get_scenarios", {}, "POST"),
     history: (lead, start = 0) =>
       call("get_customer_history", { crm_lead: lead, start, limit: 20 }),

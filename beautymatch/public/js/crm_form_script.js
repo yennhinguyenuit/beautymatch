@@ -3,15 +3,12 @@ class CRMLead {
 	async onLoad() {
 		if (!this.doc?.name || this.doc.__islocal) return;
 		const go = (section) => {
-			sessionStorage.setItem(
-				"beautymatch_customer_v1",
-				JSON.stringify({ crm_lead: this.doc.name }),
-			);
-			sessionStorage.removeItem("beautymatch_open_session_v1");
-			sessionStorage.removeItem("beautymatch_intake_retry_v1");
-			sessionStorage.removeItem("beautymatch_sample_profile_v1");
 			if (this.router?.hasRoute("BeautyMatch")) {
-				this.router.push({ name: "BeautyMatch", params: { section } });
+				document.dispatchEvent(
+					new CustomEvent("beautymatch:open", {
+						detail: { section, lead: this.doc.name },
+					}),
+				);
 			} else
 				this.toast?.error(
 					"Module Vue BeautyMatch chưa được build vào CRM. Vui lòng liên hệ quản trị viên.",

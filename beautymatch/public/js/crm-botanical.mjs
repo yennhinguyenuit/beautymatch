@@ -28,6 +28,28 @@ if (document.documentElement.classList.contains("bm-crm")) {
       !["consultation", "history", "result"].includes(link.dataset.bmAction)
     )
       return;
+    if (
+      window.beautymatch_native_crm &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.shiftKey &&
+      event.button === 0
+    ) {
+      event.preventDefault();
+      document.dispatchEvent(
+        new CustomEvent("beautymatch:open", {
+          detail: {
+            lead,
+            session: link.dataset.bmSession,
+            section:
+              link.dataset.bmAction === "history"
+                ? "customer"
+                : link.dataset.bmAction,
+          },
+        }),
+      );
+      return;
+    }
     sessionStorage.setItem(
       "beautymatch_customer_v1",
       JSON.stringify({ crm_lead: lead }),
@@ -52,6 +74,8 @@ if (document.documentElement.classList.contains("bm-crm")) {
       document.dispatchEvent(
         new CustomEvent("beautymatch:open", {
           detail: {
+            lead,
+            session: link.dataset.bmSession,
             section:
               link.dataset.bmAction === "history"
                 ? "customer"

@@ -15,6 +15,7 @@
     "test:crm:native": "node scripts/verify_crm_native.mjs",
     "test:crm:task": "node scripts/verify_crm_task.mjs",
     "test:seminar": "node scripts/verify_seminar.mjs",
+    "test:consistency": "node scripts/verify_request_consistency.mjs",
     "test:crm:native:flow": "node scripts/verify_crm_native.mjs --exercise-flow"
   },
   "devDependencies": {

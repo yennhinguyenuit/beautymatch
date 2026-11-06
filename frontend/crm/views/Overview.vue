@@ -4,6 +4,8 @@ import { useRouter } from "vue-router";
 import { Button, FormControl } from "frappe-ui";
 import StatePanel from "../components/StatePanel.vue";
 import { useBeautyMatch } from "../store.mjs";
+import { portalCall } from "../portal-api.mjs";
+import { date } from "../domain.mjs";
 const store = useBeautyMatch();
 const router = useRouter();
 const search = ref("");
@@ -11,6 +13,17 @@ const data = ref(null);
 const error = ref("");
 const loading = ref(false);
 const start = ref(0);
+const queue = ref(null),
+	queueError = ref("");
+async function loadQueue() {
+	queueError.value = "";
+	queue.value = null;
+	try {
+		queue.value = await portalCall("list_requests");
+	} catch (e) {
+		queueError.value = e.message;
+	}
+}
 async function load(offset = 0) {
 	if (loading.value) return;
 	loading.value = true;
@@ -25,10 +38,14 @@ async function load(offset = 0) {
 	}
 }
 function open(lead, section) {
-	store.selectLead(lead);
+	if (section === "consultation") store.newConsultation(lead);
+	else store.selectLead(lead);
 	router.push({ name: "BeautyMatch", params: { section } });
 }
-onMounted(() => load());
+onMounted(() => {
+	load();
+	loadQueue();
+});
 </script>
 <template>
 	<div class="bm-native-intro">
@@ -46,14 +63,26 @@ onMounted(() => load());
 	</div>
 	<div class="bm-native-panel bm-native-section-heading" style="margin-bottom: 24px">
 		<div>
-			<h2>Hồ sơ khách hàng gửi</h2>
+			<h2>{{ queue ? queue.total : "…" }} yêu cầu chờ tiếp nhận</h2>
 			<p>Tiếp nhận yêu cầu mới và bắt đầu tư vấn trên đúng CRM Lead.</p>
 		</div>
 		<Button
-			label="Mở yêu cầu tư vấn"
+			label="Tiếp nhận yêu cầu"
 			@click="router.push({ name: 'BeautyMatch', params: { section: 'requests' } })"
 		/>
 	</div>
+	<StatePanel v-if="queueError" :error="queueError" @retry="loadQueue" />
+	<ul v-if="queue?.requests.length" class="bm-native-panel bm-native-queue-preview">
+		<li v-for="entry in queue.requests.slice(0, 3)" :key="entry.name">
+			<strong>{{ entry.full_name }}</strong
+			><span>{{ date(entry.submitted_at) }} · {{ entry.name.slice(0, 8) }}</span
+			><Button
+				type="button"
+				label="Xem yêu cầu"
+				@click="router.push({ name: 'BeautyMatch', params: { section: 'requests' } })"
+			/>
+		</li>
+	</ul>
 	<form class="bm-native-toolbar" @submit.prevent="load(0)">
 		<FormControl
 			v-model="search"

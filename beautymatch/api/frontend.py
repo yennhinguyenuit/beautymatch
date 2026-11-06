@@ -144,11 +144,24 @@ def save_consultation(payload, crm_lead=None):
 
 
 @frappe.whitelist(methods=["POST"])
-def get_customer_view(crm_lead, start=0):
+def get_customer_view(crm_lead, start=0, feedback_only=False):
 	"""Compose existing TASK 4 summary/history with authorized display metadata."""
 	customer = get_customer_context(crm_lead)
 	summary = get_lead_summary(crm_lead)
-	history = get_customer_history(crm_lead, limit=10, start=start)
+	if feedback_only in (True, 1, "1", "true"):
+		try:
+			start = int(start)
+		except (TypeError, ValueError):
+			frappe.throw("Phân trang không hợp lệ.", frappe.ValidationError)
+		if start < 0:
+			frappe.throw("Phân trang không hợp lệ.", frappe.ValidationError)
+		# EXISTS filters sessions before LIMIT, including feedback on older pages.
+		condition = "s.crm_lead=%s AND EXISTS (SELECT 1 FROM `tabRecommendation Item` i WHERE i.parent=s.name AND i.parenttype='Recommendation Session' AND i.customer_feedback IN ('Interested', 'Not Interested'))"
+		total = frappe.db.sql("SELECT COUNT(*) FROM `tabRecommendation Session` s WHERE " + condition, (crm_lead,))[0][0]
+		rows = frappe.db.sql("SELECT s.name FROM `tabRecommendation Session` s WHERE " + condition + " ORDER BY s.creation DESC, s.name DESC LIMIT %s OFFSET %s", (crm_lead, 10, start), as_dict=True)
+		history = {"crm_lead": crm_lead, "total": total, "start": start, "limit": 10, "sessions": [get_recommendation_result(row.name) for row in rows]}
+	else:
+		history = get_customer_history(crm_lead, limit=10, start=start)
 	for entry in history["sessions"]:
 		doc = frappe.get_doc("Recommendation Session", entry["session_id"])
 		entry["created_at"] = _created_at(doc.creation)

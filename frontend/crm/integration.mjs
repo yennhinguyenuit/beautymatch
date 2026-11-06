@@ -2,6 +2,8 @@
 // Frappe plugin API. No Vue private properties, DOM menu injection or new app.
 import { reactive } from "vue";
 import LeafIcon from "./LeafIcon.vue";
+import { useBeautyMatch } from "./store.mjs";
+import { currentAccount } from "../../beautymatch/public/js/account-context.mjs";
 
 export const nativeAccess = reactive({ allowed: false, checked: false });
 export const beautyMatchNavigationItem = {
@@ -21,12 +23,26 @@ const sections = new Set([
 ]);
 let hostRouter;
 let pending;
+let pendingAccount = "";
 let checkedAt = 0;
+let checkedAccount = "";
 
 export async function refreshNativeAccess(force = false) {
+  const user = currentAccount();
+  if (user !== checkedAccount) {
+    nativeAccess.checked = false;
+    nativeAccess.allowed = false;
+    checkedAccount = user;
+    force = true;
+  }
   if (!force && nativeAccess.checked && Date.now() - checkedAt < 60000)
     return nativeAccess.allowed;
-  if (pending) return pending;
+  if (pending) {
+    if (pendingAccount === user) return pending;
+    await pending;
+    return refreshNativeAccess(true);
+  }
+  pendingAccount = user;
   pending = (async () => {
     try {
       const response = await fetch(
@@ -38,13 +54,14 @@ export async function refreshNativeAccess(force = false) {
         },
       );
       const data = response.ok ? (await response.json()).message : null;
+      if (user !== currentAccount()) return false;
       nativeAccess.allowed =
         data?.label === "BeautyMatch" &&
         ["/beautymatch", "/crm/beautymatch"].includes(data?.href);
     } catch {
       nativeAccess.allowed = false;
     } finally {
-      nativeAccess.checked = true;
+      nativeAccess.checked = user === currentAccount();
       checkedAt = Date.now();
       pending = null;
     }
@@ -63,7 +80,9 @@ export function installBeautyMatchRoutes(router, { isLoggedIn }) {
     meta: { beautyMatch: true },
   });
   router.beforeEach(async (to) => {
+    useBeautyMatch().syncSelection();
     if (!isLoggedIn()) {
+      useBeautyMatch().reset();
       nativeAccess.allowed = false;
       nativeAccess.checked = false;
       return;
@@ -79,11 +98,29 @@ export function installBeautyMatchRoutes(router, { isLoggedIn }) {
   window[Symbol.for("beautymatch.crm.sidebar")]?.();
   document.addEventListener("beautymatch:open", (event) => {
     const section = event.detail?.section || "";
+    if (event.detail?.lead) {
+      const store = useBeautyMatch();
+      if (section === "consultation") store.newConsultation(event.detail.lead);
+      else store.selectLead(event.detail.lead);
+      if (event.detail.session)
+        store.openSession({
+          crm_lead: event.detail.lead,
+          session_id: event.detail.session,
+        });
+    }
     if (sections.has(section))
       router.push({
         name: "BeautyMatch",
         params: { section: section || undefined },
       });
+  });
+  document.addEventListener("beautymatch:session-ended", () => {
+    useBeautyMatch().reset();
+    nativeAccess.allowed = false;
+    nativeAccess.checked = false;
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) useBeautyMatch().syncSelection();
   });
   document.addEventListener("beautymatch:task", (event) => {
     if (typeof event.detail?.task === "string")

@@ -3,6 +3,7 @@ import { onMounted, reactive, ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { Button, FormControl } from "frappe-ui";
 import StatePanel from "../components/StatePanel.vue";
+import ProfileSummary from "../components/ProfileSummary.vue";
 import { useBeautyMatch } from "../store.mjs";
 import { emptyForm, skinTypes, concerns, avoids, categories, validateForm } from "../domain.mjs";
 const store = useBeautyMatch();
@@ -11,6 +12,7 @@ const form = reactive(emptyForm());
 const loading = ref(true);
 const error = ref("");
 const loaded = ref(false);
+const editing = ref(false);
 const concernCount = computed(() => Object.keys(concerns).filter((key) => form[key]).length);
 async function load() {
 	loading.value = true;
@@ -31,6 +33,11 @@ async function load() {
 			});
 		// Consent is never inherited from a saved profile.
 		form.consent = false;
+		editing.value = !store.request;
+		if (store.request && !store.request.can_continue)
+			throw new Error(
+				"Yêu cầu không còn thuộc phiên đang tư vấn. Hãy quay lại danh sách yêu cầu mới nhất.",
+			);
 		loaded.value = true;
 	} catch (e) {
 		error.value = e.message;
@@ -71,7 +78,22 @@ onMounted(load);
 	</div>
 	<StatePanel v-if="loading || !loaded" :loading="loading" :error="error" @retry="load" />
 	<form v-else class="bm-native-form" @submit.prevent="submit" :aria-busy="store.busy">
-		<fieldset :disabled="store.busy">
+		<section v-if="store.request" class="bm-native-panel">
+			<p class="bm-native-eyebrow">YÊU CẦU {{ store.request.request_id.slice(0, 8) }}</p>
+			<h2>Hồ sơ khách đã gửi</h2>
+			<ProfileSummary :profile="store.request.snapshot" />
+			<p class="bm-native-help">
+				Bản chụp lúc gửi được giữ nguyên. Thay đổi của nhân viên sẽ được lưu vào một phiên
+				tư vấn riêng.
+			</p>
+			<Button
+				type="button"
+				label="Chỉnh sửa thông tin"
+				:disabled="store.busy"
+				@click="editing = true"
+			/>
+		</section>
+		<fieldset :disabled="store.busy || !editing">
 			<legend>Khách hàng</legend>
 			<div class="bm-native-fields">
 				<FormControl
@@ -98,7 +120,7 @@ onMounted(load);
 				chiếu chính xác.
 			</p>
 		</fieldset>
-		<fieldset :disabled="store.busy">
+		<fieldset :disabled="store.busy || !editing">
 			<legend>Tình trạng làn da</legend>
 			<div class="bm-native-fields">
 				<FormControl
@@ -137,7 +159,7 @@ onMounted(load);
 				/>
 			</div>
 		</fieldset>
-		<fieldset :disabled="store.busy">
+		<fieldset :disabled="store.busy || !editing">
 			<legend>Nhu cầu chăm sóc</legend>
 			<div class="bm-native-fields">
 				<FormControl
@@ -193,11 +215,12 @@ onMounted(load);
 		<div class="bm-native-actions">
 			<Button
 				type="submit"
-				label="Lưu hồ sơ & tạo gợi ý"
+				:label="store.request ? 'Xác nhận & tạo gợi ý' : 'Lưu hồ sơ & tạo gợi ý'"
 				variant="solid"
 				:loading="store.busy"
 				:disabled="store.busy"
 			/><Button
+				type="button"
 				label="Trở lại hồ sơ"
 				:disabled="!store.selected || store.busy"
 				@click="router.push({ name: 'BeautyMatch', params: { section: 'customer' } })"

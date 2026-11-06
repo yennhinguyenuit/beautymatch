@@ -15,7 +15,10 @@
     "assigned_to",
     "recommendation_session",
     "payload_hash",
-    "payload_json"
+    "payload_json",
+    "superseded_by",
+    "consultation_receipt",
+    "consultation_hash"
   ],
   "fields": [
     {
@@ -84,6 +87,22 @@
       "fieldtype": "Long Text",
       "label": "Submitted Snapshot",
       "reqd": 1
+    },
+    {
+      "fieldtype": "Link",
+      "label": "Superseded By",
+      "options": "BeautyMatch Customer Request",
+      "fieldname": "superseded_by"
+    },
+    {
+      "fieldtype": "Long Text",
+      "label": "Confirmed Consultation Receipt",
+      "fieldname": "consultation_receipt"
+    },
+    {
+      "fieldtype": "Data",
+      "label": "Confirmed Consultation Hash",
+      "fieldname": "consultation_hash"
     }
   ],
   "permissions": [

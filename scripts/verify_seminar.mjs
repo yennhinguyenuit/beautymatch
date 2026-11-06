@@ -103,16 +103,14 @@ async function staffGenerate(page) {
   await page.locator('.bm-native-form input[name="consent"]').waitFor();
   assert.equal(await page.locator('input[name="consent"]').isChecked(), false);
   await page.locator('input[name="consent"]').check();
-  const saved = waitRpc(page, "beautymatch.api.frontend.save_consultation");
   const generated = waitRpc(
     page,
-    "beautymatch.api.recommendation.generate_recommendations",
+    "beautymatch.api.portal.generate_for_request",
   );
   await page
-    .getByRole("button", { name: "Lưu hồ sơ & tạo gợi ý", exact: true })
+    .getByRole("button", { name: "Xác nhận & tạo gợi ý", exact: true })
     .click();
-  const receipt = (await (await saved).json()).message;
-  const result = (await (await generated).json()).message;
+  const { receipt, result } = (await (await generated).json()).message;
   assert(result?.session_id && receipt?.crm_lead);
   await page.locator(".bm-native-product").first().waitFor();
   return { receipt, result };
@@ -341,7 +339,9 @@ try {
     parameters: { session_id: first.result.session_id },
   });
   assert.deepEqual(savedOriginal, original);
-  await crmPage.getByRole("link", { name: "Hồ sơ da", exact: true }).click();
+  await crmPage
+    .getByRole("link", { name: "Khách hàng & lịch sử", exact: true })
+    .click();
   await crmPage.locator(".bm-native-session").first().waitFor();
   await screenshot(crmPage, "history");
   await page
@@ -357,11 +357,11 @@ try {
 
   await crmPage.evaluate((data) => {
     sessionStorage.setItem(
-      "beautymatch_customer_v1",
-      JSON.stringify({ crm_lead: data.crm_lead }),
+      "beautymatch_native_v2:lead",
+      JSON.stringify(data.crm_lead),
     );
     sessionStorage.setItem(
-      "beautymatch_open_session_v1",
+      "beautymatch_native_v2:opened",
       JSON.stringify({ crm_lead: data.crm_lead, session_id: data.session_id }),
     );
   }, seeded.customers.C);

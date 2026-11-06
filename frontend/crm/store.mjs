@@ -4,113 +4,177 @@ import {
   createLiveApi,
   normalizeRecommendation,
 } from "../../beautymatch/public/js/api.mjs";
+import {
+  currentAccount,
+  createAccountContext,
+} from "../../beautymatch/public/js/account-context.mjs";
 import { normalizeIntake } from "./domain.mjs";
 import { portalCall } from "./portal-api.mjs";
 
-function read(key) {
-  try {
-    return JSON.parse(sessionStorage.getItem(key) || "null");
-  } catch {
-    return null;
-  }
-}
 export const useBeautyMatch = defineStore("beautymatch-native", () => {
-  const api = createLiveApi({ csrf: window.csrf_token || "" });
-  const selected = ref(read("beautymatch_customer_v1")?.crm_lead || "");
-  const customer = ref(null);
-  const result = ref(null);
-  const resultContext = ref(null);
-  const busy = ref(false);
+  const context = createAccountContext(sessionStorage, currentAccount);
+  let owner = context.sync();
+  const selected = ref(context.read("lead") || "");
+  const customer = ref(null),
+    result = ref(null),
+    resultContext = ref(null);
+  const request = ref(null),
+    completionError = ref(""),
+    completionBusy = ref(false),
+    busy = ref(false);
   let work;
-  const account = () =>
-    decodeURIComponent(
-      document.cookie
-        .split("; ")
-        .find((value) => value.startsWith("user_id="))
-        ?.slice(8) || "session",
-    );
-  const intakeKey = () => `beautymatch_crm_intake_v1:${account()}`;
-  const receiptKey = () => `beautymatch_crm_receipt_v1:${account()}`;
-
-  function selectLead(lead) {
-    if (lead !== selected.value) {
-      sessionStorage.removeItem("beautymatch_staff_request_v1");
-      result.value = null;
-      resultContext.value = null;
-      customer.value = null;
-      sessionStorage.removeItem("beautymatch_open_session_v1");
-      sessionStorage.removeItem(receiptKey());
-    }
-    selected.value = lead || "";
-    if (lead)
-      sessionStorage.setItem(
-        "beautymatch_customer_v1",
-        JSON.stringify({ crm_lead: lead }),
-      );
-    else sessionStorage.removeItem("beautymatch_customer_v1");
+  const api = createLiveApi({
+    csrf: window.csrf_token || "",
+    fetcher: async (...args) => {
+      const response = await fetch(...args);
+      if (response.status === 401 || !currentAccount()) reset();
+      return response;
+    },
+  });
+  function clearMemory() {
+    customer.value = result.value = resultContext.value = request.value = null;
+    completionError.value = "";
+  }
+  function reset() {
+    context.clear();
+    selected.value = "";
+    clearMemory();
   }
   function syncSelection() {
-    const lead = read("beautymatch_customer_v1")?.crm_lead || "";
-    if (lead !== selected.value) {
-      selected.value = lead;
-      result.value = null;
-      resultContext.value = null;
-      customer.value = null;
+    const user = context.sync();
+    if (user !== owner) {
+      clearMemory();
+      owner = user;
     }
+    const lead = context.read("lead") || "";
+    if (lead !== selected.value) {
+      clearMemory();
+      selected.value = lead;
+    }
+  }
+  function assertAccount(user) {
+    if (!user || user !== currentAccount()) {
+      reset();
+      throw new Error("Tài khoản đã thay đổi. Vui lòng mở lại BeautyMatch.");
+    }
+  }
+  function selectLead(lead) {
+    syncSelection();
+    if ((lead || "") !== selected.value) {
+      clearMemory();
+      for (const key of ["handoff", "opened", "receipt", "intake"])
+        context.write(key, null);
+    }
+    selected.value = lead || "";
+    context.write("lead", selected.value);
+  }
+  function newConsultation(lead = selected.value) {
+    selectLead(lead);
+    clearMemory();
+    for (const key of ["handoff", "opened", "receipt", "intake"])
+      context.write(key, null);
+  }
+  function acceptRequest(value) {
+    selectLead(value.crm_lead);
+    context.write("handoff", {
+      request_id: value.request_id,
+      crm_lead: value.crm_lead,
+    });
+    context.write(
+      "opened",
+      value.session_id
+        ? { crm_lead: value.crm_lead, session_id: value.session_id }
+        : null,
+    );
+    context.write("receipt", null);
+    context.write("intake", null);
+    request.value = value;
   }
   async function loadCustomer() {
     syncSelection();
-    customer.value = selected.value
-      ? await api.customerContext(selected.value)
+    const user = owner;
+    const handoff = context.read("handoff");
+    request.value = handoff
+      ? await portalCall("get_request", { request_id: handoff.request_id })
       : null;
+    assertAccount(user);
+    if (request.value) {
+      const snapshot = request.value.snapshot;
+      customer.value = {
+        ...snapshot,
+        profile: snapshot,
+        crm_lead: request.value.crm_lead,
+      };
+    } else
+      customer.value = selected.value
+        ? await api.customerContext(selected.value)
+        : null;
+    assertAccount(user);
     return customer.value;
   }
   function retryIntake() {
-    const value = read(intakeKey());
+    const value = context.read("intake");
     return value?.crm_lead === (selected.value || null) ? value : null;
   }
   async function submit(form) {
     if (work) return work;
+    syncSelection();
+    const user = owner;
     busy.value = true;
     work = (async () => {
       const previous = retryIntake();
       const normalized = normalizeIntake(form);
       const signature = JSON.stringify(normalized);
-      const request_id =
-        previous?.signature === signature
-          ? previous.payload.request_id
-          : crypto.randomUUID();
-      const payload = { ...normalized, request_id };
-      sessionStorage.setItem(
-        intakeKey(),
-        JSON.stringify({
-          crm_lead: selected.value || null,
-          signature,
-          payload,
-        }),
-      );
-      const receipt = await api.saveConsultation(
+      const payload = {
+        ...normalized,
+        request_id:
+          previous?.signature === signature
+            ? previous.payload.request_id
+            : crypto.randomUUID(),
+      };
+      context.write("intake", {
+        crm_lead: selected.value || null,
+        signature,
         payload,
-        selected.value || null,
-      );
+      });
+      const handoff = context.read("handoff");
+      let receipt;
+      if (handoff) {
+        const reply = await portalCall("generate_for_request", {
+          request_id: handoff.request_id,
+          payload,
+        });
+        assertAccount(user);
+        receipt = reply.receipt;
+        result.value = normalizeRecommendation(reply.result);
+        context.write("opened", {
+          crm_lead: receipt.crm_lead,
+          session_id: result.value.session_id,
+        });
+      } else {
+        receipt = await api.saveConsultation(payload, selected.value || null);
+        assertAccount(user);
+        selectLead(receipt.crm_lead);
+        context.write("opened", null);
+        result.value = null;
+      }
       if (
         !["crm_lead", "beauty_profile", "request_id", "profile_version"].every(
-          (key) => typeof receipt[key] === "string" && receipt[key],
+          (k) => typeof receipt[k] === "string" && receipt[k],
         )
       )
         throw new Error(
           "Máy chủ chưa trả đủ thông tin tư vấn. Hãy thử lại cùng yêu cầu.",
         );
-      selectLead(receipt.crm_lead);
-      const identifiers = Object.fromEntries(
-        ["crm_lead", "beauty_profile", "request_id", "profile_version"].map(
-          (key) => [key, receipt[key]],
+      context.write(
+        "receipt",
+        Object.fromEntries(
+          ["crm_lead", "beauty_profile", "request_id", "profile_version"].map(
+            (key) => [key, receipt[key]],
+          ),
         ),
       );
-      sessionStorage.setItem(receiptKey(), JSON.stringify(identifiers));
-      sessionStorage.removeItem("beautymatch_open_session_v1");
-      sessionStorage.removeItem(intakeKey());
-      result.value = null;
+      context.write("intake", null);
       return receipt;
     })();
     try {
@@ -120,47 +184,79 @@ export const useBeautyMatch = defineStore("beautymatch-native", () => {
       work = null;
     }
   }
+  async function retryCompletion() {
+    if (completionBusy.value || !result.value) return;
+    const user = currentAccount();
+    completionBusy.value = true;
+    completionError.value = "";
+    try {
+      const actual = await portalCall("get_request", {
+        session_id: result.value.session_id,
+      });
+      assertAccount(user);
+      request.value = actual;
+      if (!actual || actual.status === "Completed") return;
+      if (actual.status === "Superseded") {
+        completionError.value =
+          "Yêu cầu đã có yêu cầu mới hơn. Kết quả này được giữ trong lịch sử; hãy tiếp nhận yêu cầu mới.";
+        return;
+      }
+      const reply = await portalCall("complete_request", {
+        request_id: actual.request_id,
+        session_id: result.value.session_id,
+      });
+      assertAccount(user);
+      if (reply.status !== "Completed")
+        throw new Error("Máy chủ chưa xác nhận hoàn tất.");
+      request.value = { ...actual, status: reply.status };
+      context.write("handoff", null);
+    } catch (error) {
+      completionError.value =
+        "Đã tạo kết quả tư vấn nhưng chưa cập nhật được trạng thái yêu cầu. " +
+        error.message;
+    } finally {
+      completionBusy.value = false;
+    }
+  }
   async function loadResult() {
     syncSelection();
-    const opened = read("beautymatch_open_session_v1");
-    const receipt = read(receiptKey());
-    if (opened?.session_id && opened.crm_lead === selected.value) {
+    const user = owner;
+    let opened = context.read("opened");
+    const receipt = context.read("receipt"),
+      handoff = context.read("handoff");
+    if (!opened && handoff) {
+      const saved = await portalCall("get_request", {
+        request_id: handoff.request_id,
+      });
+      assertAccount(user);
+      if (saved.session_id)
+        opened = { crm_lead: saved.crm_lead, session_id: saved.session_id };
+    }
+    if (opened?.session_id && opened.crm_lead === selected.value)
       result.value = normalizeRecommendation(
         await api.result(opened.session_id),
       );
-    } else if (receipt?.crm_lead === selected.value) {
+    else if (receipt?.crm_lead === selected.value)
       result.value = normalizeRecommendation(await api.generate(receipt));
-      sessionStorage.setItem(
-        "beautymatch_open_session_v1",
-        JSON.stringify({
-          crm_lead: selected.value,
-          session_id: result.value.session_id,
-        }),
-      );
-    } else {
-      result.value = null;
-      resultContext.value = null;
+    else {
+      result.value = resultContext.value = null;
       return;
     }
+    assertAccount(user);
+    context.write("opened", {
+      crm_lead: selected.value,
+      session_id: result.value.session_id,
+    });
     resultContext.value = await api.context(result.value.session_id);
-    const handoff = read("beautymatch_staff_request_v1");
-    if (handoff?.crm_lead === selected.value && handoff.request_id) {
-      await portalCall("complete_request", {
-        request_id: handoff.request_id,
-        session_id: result.value.session_id,
-      });
-      sessionStorage.removeItem("beautymatch_staff_request_v1");
-    }
+    assertAccount(user);
+    await retryCompletion();
   }
   function openSession(session) {
     selectLead(session.crm_lead || selected.value);
-    sessionStorage.setItem(
-      "beautymatch_open_session_v1",
-      JSON.stringify({
-        crm_lead: selected.value,
-        session_id: session.session_id,
-      }),
-    );
+    context.write("opened", {
+      crm_lead: selected.value,
+      session_id: session.session_id,
+    });
     result.value = null;
   }
   return {
@@ -169,13 +265,20 @@ export const useBeautyMatch = defineStore("beautymatch-native", () => {
     customer,
     result,
     resultContext,
+    request,
+    completionError,
+    completionBusy,
     busy,
     selectLead,
     syncSelection,
+    reset,
+    newConsultation,
+    acceptRequest,
     loadCustomer,
     retryIntake,
     submit,
     loadResult,
+    retryCompletion,
     openSession,
   };
 });

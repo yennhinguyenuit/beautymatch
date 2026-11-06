@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, computed } from "vue";
+import { onMounted, onUnmounted, ref, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Button } from "frappe-ui";
 import StatePanel from "../components/StatePanel.vue";
@@ -7,6 +7,7 @@ import ProfileSummary from "../components/ProfileSummary.vue";
 import { useBeautyMatch } from "../store.mjs";
 import { categories, money, number, date } from "../domain.mjs";
 import { openNativeTask } from "../integration.mjs";
+import { latestRequest } from "../latest-request.mjs";
 const store = useBeautyMatch(),
 	router = useRouter(),
 	route = useRoute();
@@ -14,28 +15,28 @@ const data = ref(null),
 	loading = ref(false),
 	error = ref(""),
 	start = ref(0);
-const feedbackOnly = computed(() => route.params.section === "feedback");
-const sessions = computed(() =>
-	feedbackOnly.value
-		? data.value?.history.sessions.filter((s) =>
-				s.results.some((item) =>
-					["Interested", "Not Interested"].includes(item.customer_feedback),
-				),
-			) || []
-		: data.value?.history.sessions || [],
-);
+const feedbackOnly = ref(route.params.section === "feedback");
+const sessions = computed(() => data.value?.history.sessions || []);
+const next = latestRequest();
+onUnmounted(next);
+watch(feedbackOnly, () => load(0));
 async function load(offset = 0) {
 	store.syncSelection();
-	if (!store.selected || loading.value) return;
+	if (!store.selected) return;
+	const current = next();
+	data.value = null;
 	loading.value = true;
 	error.value = "";
 	try {
-		data.value = await store.api.customerView(store.selected, offset);
-		start.value = offset;
+		const reply = await store.api.customerView(store.selected, offset, feedbackOnly.value);
+		if (current()) {
+			data.value = reply;
+			start.value = offset;
+		}
 	} catch (e) {
-		error.value = e.message;
+		if (current()) error.value = e.message;
 	} finally {
-		loading.value = false;
+		if (current()) loading.value = false;
 	}
 }
 function open(session) {
@@ -57,7 +58,10 @@ onMounted(() => load());
 				label="Tư vấn mới"
 				variant="solid"
 				:disabled="!store.selected"
-				@click="router.push({ name: 'BeautyMatch', params: { section: 'consultation' } })"
+				@click="
+					store.newConsultation();
+					router.push({ name: 'BeautyMatch', params: { section: 'consultation' } });
+				"
 			/><Button
 				label="Cập nhật"
 				:disabled="!store.selected"
@@ -79,6 +83,9 @@ onMounted(() => load());
 		@retry="load(start)"
 	/>
 	<template v-else-if="data">
+		<label class="bm-native-filter"
+			><input v-model="feedbackOnly" type="checkbox" /> Chỉ phiên có phản hồi</label
+		>
 		<div class="bm-native-kpis bm-native-kpis-three">
 			<article>
 				<span>Phiên tư vấn</span><strong>{{ number(data.summary.total_sessions) }}</strong>

@@ -102,6 +102,32 @@ export function validateForm(form) {
   if (!form.consent) return "Cần xác nhận đồng ý lưu thông tin tư vấn.";
   return "";
 }
+export function fieldErrors(form) {
+  const errors = {};
+  if (!String(form.full_name || "").trim())
+    errors.full_name = "Nhập họ và tên của bạn.";
+  if (!String(form.email || "").trim() && !String(form.phone || "").trim())
+    errors.email = "Cần email hoặc số điện thoại để liên hệ.";
+  if (
+    form.phone &&
+    !/^\+?[0-9]{8,15}$/.test(String(form.phone).replace(/[\s().-]/g, ""))
+  )
+    errors.phone = "Kiểm tra số điện thoại (8–15 chữ số).";
+  if (!skinTypes[form.skin_type])
+    errors.skin_type = "Chọn mô tả loại da gần nhất.";
+  if (!["Sensitive", "Not specifically sensitive"].includes(form.sensitivity))
+    errors.sensitivity = "Chọn độ nhạy cảm của da.";
+  const count = Object.keys(concerns).filter((key) => form[key]).length;
+  if (count < 1 || count > 3)
+    errors.concern_oil_control = "Chọn từ 1 đến 3 vấn đề bạn muốn ưu tiên.";
+  if (!categories[form.requested_category])
+    errors.requested_category = "Chọn danh mục sản phẩm.";
+  if (!Number.isFinite(Number(form.max_budget)) || Number(form.max_budget) <= 0)
+    errors.max_budget = "Nhập ngân sách lớn hơn 0.";
+  if (![true, 1, "1"].includes(form.consent))
+    errors.consent = "Bạn cần xác nhận đồng ý trước khi gửi.";
+  return errors;
+}
 export function normalizeIntake(form) {
   const result = Object.fromEntries(
     [

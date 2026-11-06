@@ -96,6 +96,27 @@ onMounted(load);
 			@click="router.push({ name: 'BeautyMatch', params: { section: 'consultation' } })"
 	/></StatePanel>
 	<template v-else>
+		<div
+			v-if="store.completionError"
+			class="bm-native-warning"
+			role="alert"
+			data-testid="completion-warning"
+		>
+			<p>{{ store.completionError }}</p>
+			<Button
+				type="button"
+				label="Thử cập nhật trạng thái yêu cầu"
+				:loading="store.completionBusy"
+				@click="store.retryCompletion"
+			/>
+		</div>
+		<p
+			v-else-if="store.request?.status === 'Completed'"
+			class="bm-native-status"
+			role="status"
+		>
+			Đã xử lý yêu cầu · Backend xác nhận hoàn tất.
+		</p>
 		<ProfileSummary :profile="store.resultContext?.profile || {}" />
 		<StatePanel
 			v-if="!store.result.results.length"
@@ -204,6 +225,7 @@ onMounted(load);
 								label="Gửi phản hồi"
 								:loading="Boolean(pending)"
 							/><Button
+								type="button"
 								label="Hủy"
 								:disabled="Boolean(pending)"
 								@click="rejectItem = ''"
