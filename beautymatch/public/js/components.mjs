@@ -1,7 +1,7 @@
 import {
   catalogImage,
   catalogCrop,
-} from "./catalog-images.mjs?v=botanical-20261105-v2";
+} from "./catalog-images.mjs?v=botanical-20261108";
 
 export const escape = (value = "") =>
   String(value ?? "").replace(

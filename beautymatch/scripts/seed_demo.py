@@ -287,6 +287,8 @@ def prepare_self_service():
     _guard()
     from uuid import uuid4
     from beautymatch.api import self_service
+    from beautymatch.scripts.local_demo import prepare
+    prepare()
     target = demo_payload("A")
     user = USERS["customer"][0]
     lead = frappe.db.get_value("BeautyMatch Customer Account", {"user": user}, "crm_lead")
@@ -295,8 +297,13 @@ def prepare_self_service():
     if recent:
         session = frappe.get_doc("Recommendation Session", recent[0].name)
         matches = all(profile.get(field) == target[field] and json.loads(session.profile_snapshot).get(field) == target[field] for field in recommendation.PROFILE_FIELDS)
+        # Historical snapshots stay immutable. Prepare a fresh session when
+        # its catalog photos have changed, even if skin preferences match.
+        matches = matches and all(row.image_url_snapshot == (frappe.db.get_value("Product Profile", row.product, "image_url") or "") for row in session.recommendation_items)
         if matches and all(row.customer_feedback == "None" for row in session.recommendation_items) and not frappe.db.exists("BeautyMatch Contact Request", {"recommendation_session": session.name}):
-            return {"ready": True, "session_id": session.name, "changed": False}
+            ready = {"ready": True, "session_id": session.name, "request_id": session.request_id, "changed": False}
+            _write(LOCAL / "seminar-self-service-ready.json", ready)
+            return ready
     actor = frappe.session.user
     try:
         frappe.set_user(user)

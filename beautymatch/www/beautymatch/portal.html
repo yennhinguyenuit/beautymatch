@@ -6,13 +6,13 @@
   <title>Hồ sơ của bạn · BeautyMatch</title>
   <link rel="icon" href="/assets/beautymatch/images/leaf.svg">
   <link rel="stylesheet" href="/assets/beautymatch/css/beautymatch.css">
-  <link rel="stylesheet" href="/assets/beautymatch/css/portal.css?v=self-service-20261107">
+  <link rel="stylesheet" href="/assets/beautymatch/css/portal.css?v=portal-type-20261107-1">
 </head>
 <body class="bm-portal" data-authenticated="{{ '1' if logged_in else '0' }}">
   <a class="skip-link" href="#main">Đến nội dung chính</a>
   <header class="portal-header"><a href="/beautymatch/portal" aria-label="BeautyMatch · Hồ sơ của bạn"><img src="/assets/beautymatch/images/leaf.svg" alt="">BeautyMatch</a><span>Không gian của bạn</span>{% if logged_in %}<button id="portal-logout" type="button">Đăng xuất</button>{% endif %}</header>
   <main id="main" class="portal-layout">
-    <aside class="portal-story"><p class="portal-eyebrow">CHĂM SÓC TỪ SỰ THẤU HIỂU</p><h1>Hiểu làn da.<br><em>Chọn điều phù hợp.</em></h1><p>Chia sẻ nhu cầu chăm sóc da của bạn. BeautyMatch tạo gợi ý ngay từ hồ sơ. Chuyên viên chỉ liên hệ khi bạn chủ động yêu cầu.</p><div class="portal-story-note">Hồ sơ của riêng bạn<br><span>Thông tin được gửi đến nhân viên tư vấn được phân quyền.</span></div></aside>
+    <aside class="portal-story"><p class="portal-eyebrow">CHĂM SÓC TỪ SỰ THẤU HIỂU</p><h1>Hiểu làn da.<br><em>Chọn điều <span class="portal-story-phrase">phù hợp.</span></em></h1><p>Chia sẻ nhu cầu chăm sóc da của bạn. BeautyMatch tạo gợi ý ngay từ hồ sơ. Chuyên viên chỉ liên hệ khi bạn chủ động yêu cầu.</p><div class="portal-story-note">Hồ sơ của riêng bạn<br><span>Thông tin được gửi đến nhân viên tư vấn được phân quyền.</span></div></aside>
     <section class="portal-panel" aria-label="Hồ sơ khách hàng">
     {% if not logged_in %}
       <h2>Chào bạn trở lại</h2><p>Đăng nhập tài khoản khách hàng để gửi và cập nhật hồ sơ.</p>

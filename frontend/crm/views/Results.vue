@@ -9,6 +9,7 @@ import { feedbackMessage } from "../../../beautymatch/public/js/api.mjs";
 import { money, number, safeUrl, rejectionReasons } from "../domain.mjs";
 import { openNativeTask } from "../integration.mjs";
 import ContactConsent from "../components/ContactConsent.vue";
+import CatalogPhoto from "../components/CatalogPhoto.vue";
 const store = useBeautyMatch();
 const router = useRouter();
 const loading = ref(true),
@@ -17,8 +18,7 @@ const loading = ref(true),
 	pending = ref("");
 const rejectItem = ref(""),
 	reason = ref("");
-const confirmations = reactive({}),
-	failedImages = reactive({});
+const confirmations = reactive({});
 async function load() {
 	loading.value = true;
 	error.value = "";
@@ -136,18 +136,8 @@ onMounted(load);
 				:data-item-id="item.item_id"
 			>
 				<div class="bm-native-product-image">
-					<span class="bm-native-rank">Top {{ item.rank }}</span
-					><img
-						v-if="safeUrl(item.image_url) && !failedImages[item.item_id]"
-						:src="safeUrl(item.image_url)"
-						:alt="item.product_name"
-						loading="lazy"
-						@error="failedImages[item.item_id] = true"
-					/>
-					<div v-else class="bm-native-photo-fallback">
-						<span aria-hidden="true">◇</span>
-						<p>Chưa có ảnh catalog</p>
-					</div>
+					<span class="bm-native-rank">Top {{ item.rank }}</span>
+					<CatalogPhoto :source="item.image_url" :alt="item.product_name" />
 				</div>
 				<div class="bm-native-product-content">
 					<p class="bm-native-eyebrow">{{ item.brand }}</p>

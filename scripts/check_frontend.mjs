@@ -21,6 +21,7 @@ files.push(
   "scripts/verify_request_consistency.mjs",
   "scripts/verify_portal_notifications.mjs",
   "scripts/verify_self_service.mjs",
+  "scripts/verify_demo_photos.mjs",
   "frontend/crm/care-api.mjs",
 );
 for (const file of files) {

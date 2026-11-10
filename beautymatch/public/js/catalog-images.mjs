@@ -1,6 +1,13 @@
 // Exact-source copies; provenance, SHA256 and display-only crop in images/catalog/manifest.json.
 const catalogImages = new Map([
   [
+    "https://media.hcdn.vn/catalog/product/o/g/og-image-auto-tinh-chat-garnier-giam-mun-mo-tham-cho-da-dau-mun-30ml_EzLdsJGRdMFKeRef.png",
+    {
+      url: "/assets/beautymatch/images/catalog/HASAKI-SER-013.png",
+      crop: { x: 260, y: 218, width: 100, height: 307 },
+    },
+  ],
+  [
     "https://media.hcdn.vn/catalog/product/o/g/og-image-auto-serum-caryophy-giam-mun-mo-tham-se-lo-chan-long-30ml_mTyYxtDiDoZZpPDY.png",
     {
       url: "/assets/beautymatch/images/catalog/HASAKI-SER-001.png",

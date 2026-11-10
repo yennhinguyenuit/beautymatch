@@ -2,7 +2,9 @@
 
 ## Cache ảnh catalog thật
 
-Ba PNG trong `beautymatch/public/images/catalog/` được tải nguyên byte từ đúng `image_url` của catalog CSV có sẵn: `HASAKI-SER-001`, `HASAKI-SER-008`, `HASAKI-TON-009`. Đây là ảnh catalog đã có nguồn, không phải ảnh sản phẩm sinh bằng AI. `manifest.json` lưu URL nguồn, đường dẫn local, SHA256 và tọa độ crop hiển thị. Ảnh nguồn không bị sửa; CSS chỉ trình bày vùng packshot để không đưa giá/quảng cáo trong banner cũ vào UI. `catalog-images.mjs` chỉ ánh xạ chính xác các URL này; không thay đổi dữ liệu API, bản ghi sản phẩm hoặc snapshot. Ảnh không có nguồn hợp lệ tiếp tục dùng fallback có nhãn.
+Ba PNG trong `beautymatch/public/images/catalog/` được tải nguyên byte từ đúng `image_url` của catalog CSV có sẵn: `HASAKI-SER-001`, `HASAKI-SER-008`, `HASAKI-TON-009`. Ngày **08/11/2026**, bổ sung PNG thứ tư `HASAKI-SER-013`: ảnh đúng serum Garnier 30ml lấy từ `og:image` của [trang sản phẩm đã có trong catalog](https://hasaki.vn/san-pham/tinh-chat-garnier-giam-mun-mo-tham-cho-da-dau-mun-30ml-102911.html). CSV gốc thiếu ảnh sản phẩm này nên không sửa CSV; script local chỉ bổ sung trường ảnh trống của bản sao có nhãn `BM-DEMO-HASAKI-SER-013`.
+
+Đây là ảnh catalog có nguồn, không phải ảnh sản phẩm sinh bằng AI. `manifest.json` lưu URL nguồn, trang xác minh nếu bổ sung mới, đường dẫn local, SHA256 và tọa độ crop hiển thị. Ảnh nguồn không bị sửa; CSS chỉ trình bày vùng packshot để không đưa giá/quảng cáo trong banner vào UI. `catalog-images.mjs` ánh xạ chính xác URL nguồn sang ảnh local, dùng chung trong Portal và component `frontend/crm/components/CatalogPhoto.vue`. Không thay đổi sản phẩm nghiên cứu hoặc snapshot cũ. Giá hiển thị tiếp tục từ API. Ảnh không có nguồn hợp lệ tiếp tục dùng fallback có nhãn.
 
 Ngày chuẩn bị: 2026-11-05. Các asset này được lưu trực tiếp trong repository; giao diện không cần gọi dịch vụ tạo ảnh hoặc Google Fonts lúc chạy.
 

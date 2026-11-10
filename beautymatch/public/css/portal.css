@@ -85,12 +85,21 @@
 		url("/assets/beautymatch/images/botanical/leaf-detail.webp") center/cover;
 }
 .portal-story h1 {
-	font-family: Georgia, serif;
+	font-family: "Cormorant Garamond", Georgia, serif;
 	font-size: clamp(34px, 4.4vw, 58px);
-	line-height: 1.12;
-	font-weight: 400;
-	letter-spacing: -1.5px;
+	line-height: 1.16;
+	font-weight: 500;
+	font-synthesis: none;
+	letter-spacing: -0.02em;
+	text-wrap: balance;
 	margin: 26px 0;
+}
+.portal-story h1 em {
+	font-family: inherit;
+	font-weight: inherit;
+}
+.portal-story-phrase {
+	white-space: nowrap;
 }
 .portal-story p {
 	line-height: 1.8;

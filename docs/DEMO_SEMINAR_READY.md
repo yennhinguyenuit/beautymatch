@@ -1,6 +1,6 @@
 # BeautyMatch — sẵn demo mô hình khách tự nhận gợi ý
 
-Cập nhật **07/11/2026**. Nhánh **`fix/beautymatch-final-demo`**, baseline **`31a7633a844cf7bc448558e879c41915bbeaefc6`**. Working tree chưa commit; không push/merge/force-push. Site local đã xác minh: **Frappe 15.121.3, CRM 1.86.0**, Docker `crm-frappe-1`, `crm.localhost`.
+Cập nhật ảnh demo **08/11/2026**, trên HEAD **`2d0b9c5`** (self-service đã có trong commit này). Nhánh **`fix/beautymatch-final-demo`**. Phần sửa ảnh chưa commit; không push/merge/force-push. Các kết quả kiểm thử self-service bên dưới được ghi ngày 07/11, phần kiểm thử ảnh mới nằm ở mục 3. Site local đã xác minh: **Frappe 15.121.3, CRM 1.86.0**, Docker `crm-frappe-1`, `crm.localhost`.
 
 ## 1. Nghiệp vụ hiện tại
 
@@ -37,7 +37,17 @@ Notification mới mở `/crm/beautymatch/contact/<UUID>` bằng named route c�
 
 Nguyễn Minh Anh: **Combination; Oil Control/Acne/Aging; Serum; 325000; không tránh thành phần; không ưu tiên thương hiệu**. Catalog local **68 = 65 nghiên cứu + 3 mẫu có nhãn trình diễn**, **5 Active**. Engine thật trả ba sản phẩm, điểm **82,46 / 80,35 / 74,04**. B/C hiện trả 0; không ép bộ lọc, sửa claim hoặc thuật toán. [Environment thật](../test-results/self-service/environment.json).
 
-Sản phẩm thiếu ảnh dùng fallback có nhãn; ảnh có bản sao chính xác dùng asset local theo provenance đang có. Điểm, giá và thành phần là snapshot lưu trong Session/Item, không hardcode kết quả. Số điện thoại trong QA là dữ liệu giả lập, không gọi thật.
+**Chọn Nguyễn Minh Anh để demo đầy đủ ảnh**, đăng nhập khách bằng `khach`, Lead `CRM-LEAD-2026-00030` do `tuvan` phụ trách. Giữ hồ sơ A như trên; không chọn B/C khi cần trình bày sản phẩm. Bộ ba thực tế:
+
+| Hạng | Sản phẩm trình diễn | Điểm | Giá snapshot | Ảnh local |
+| --- | --- | --- | --- | --- |
+| 1 | Garnier giảm mụn mờ thâm 30ml | 82,46% | 218.000đ | `HASAKI-SER-013.png` |
+| 2 | Cocoon Bí Đao 70ml | 80,35% | 325.000đ | `HASAKI-SER-008.png` |
+| 3 | Caryophy giảm mụn mờ thâm 30ml | 74,04% | 264.000đ | `HASAKI-SER-001.png` |
+
+Nguyên nhân mất ảnh: `BM-DEMO-HASAKI-SER-013.image_url` trống từ CSV gốc; CRM trước đây còn gọi ảnh CDN trực tiếp. Đã xác minh và cache đúng ảnh Garnier từ trang sản phẩm Hasaki. Script chỉ điền ảnh trống trên bản sao demo đã xác minh tên/brand/category/product URL, kiểm tra hash asset; không sửa catalog nghiên cứu, claim, giá hay thuật toán. Portal và CRM cùng ánh xạ URL nguồn sang ảnh trong app. Provenance: [BOTANICAL_ASSETS](BOTANICAL_ASSETS.md).
+
+Điểm, giá và thành phần vẫn là snapshot lưu trong Session/Item, không hardcode kết quả. Session cũ giữ nguyên ảnh cũ; cần mở **phiên mới nhất** hoặc gửi lại hồ sơ để nhận ảnh đã bổ sung. Sản phẩm ngoài bộ demo chưa có ảnh vẫn dùng fallback có nhãn. Số điện thoại trong QA là dữ liệu giả lập, không gọi thật.
 
 Chuẩn bị lại một phiên chưa phản hồi, không tự tạo việc:
 
@@ -45,7 +55,19 @@ Chuẩn bị lại một phiên chưa phản hồi, không tự tạo việc:
 docker exec -w /home/frappe/frappe-bench crm-frappe-1 bench --site crm.localhost execute beautymatch.scripts.seed_demo.prepare_self_service
 ```
 
-Lặp lại giữ cùng phiên nếu hồ sơ đúng và chưa feedback/contact. Sau một lượt demo đã có phản hồi hoặc profile đổi, tạo phiên mới để trình bày, giữ lịch sử cũ. Seed chạy lại không reset mật khẩu, không đổi catalog nghiên cứu. [Seed idempotency](../test-results/self-service/seed-idempotency.json), [chuẩn bị](../test-results/self-service/ready-prepared.json), [lặp lại](../test-results/self-service/ready-repeated.json).
+Lặp lại giữ cùng phiên nếu hồ sơ, ảnh snapshot đúng catalog và chưa feedback/contact. Khi bổ sung ảnh, chuẩn bị một phiên mới thay vì ghi đè lịch sử. Sau một lượt demo đã có phản hồi hoặc profile đổi, tạo phiên mới để trình bày, giữ lịch sử cũ. Seed chạy lại không reset mật khẩu, không đổi catalog nghiên cứu. [Seed idempotency](../test-results/self-service/seed-idempotency.json), [chuẩn bị](../test-results/self-service/ready-prepared.json), [lặp lại](../test-results/self-service/ready-repeated.json).
+
+Kiểm thử ảnh thực tế (chạy sau build):
+
+```powershell
+npm.cmd run test:demo:photos
+```
+
+Script đăng nhập `khach`/`tuvan` bằng UI thật, gửi hồ sơ qua API thật, chặn CDN ảnh bên ngoài, kiểm tra cả ba ảnh có `naturalWidth > 0`, reload, Portal 390/320px và CRM 390px. Kiểm tra các session/item cũ, hash catalog nghiên cứu, số Lead/Task/notification và chuẩn bị lặp lại. Kết quả và screenshot: [report](../test-results/demo-photos/report.json), [Portal desktop](../test-results/demo-photos/portal-desktop.png), [CRM desktop](../test-results/demo-photos/crm-desktop.png). Không giả lập API.
+
+Kết quả mới ngày 08/11: **59 Python PASS** (thêm ba kiểm tra ảnh đúng danh tính sản phẩm), **25 JS PASS**, **40 module syntax PASS**, **5 nhóm browser ảnh PASS**, **seed idempotency PASS**. Browser không có lỗi JavaScript. Lượt đầu harness bị panel trợ giúp CRM che nút lịch sử; đã bổ sung thao tác đóng panel và chạy lại. CRM chọn mobile shell lúc khởi động, vì vậy kiểm thử dùng context di động riêng có phiên đăng nhập thật; ảnh chụp mobile lấy viewport thay vì clip một vùng dài ngoài scroll container.
+
+Các file thay đổi cho ảnh: `beautymatch/scripts/local_demo.py`, `seed_demo.py`; ảnh `HASAKI-SER-013.png` + `manifest.json`; `catalog-images.mjs`, cache version trong `components.mjs`; component `CatalogPhoto.vue` + `Results.vue`; test `test_demo_photos.py`, `catalog.test.mjs`, `verify_demo_photos.mjs`; lệnh test trong `package.json`/`check_frontend.mjs`; `docs/DEMO_SEMINAR_READY.md` và `docs/BOTANICAL_ASSETS.md`. Build CRM + Frappe assets, clear-cache, clear-website-cache, restart local đã thực hiện. Không cần migrate vì không đổi schema. File trạng thái `.local/seminar-self-service-ready.json` trỏ phiên mới nhất kể cả khi lần chuẩn bị được tái sử dụng.
 
 ## 4. Demo trực tiếp
 

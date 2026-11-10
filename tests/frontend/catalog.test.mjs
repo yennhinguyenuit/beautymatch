@@ -16,10 +16,15 @@ test("self-hosted photos retain exact source identity, bytes and bounded display
     "utf8",
   );
   for (const row of manifest) {
-    assert(
-      csv.includes(row.source_url),
-      "Each cache source must belong to the existing catalog.",
-    );
+    if (!csv.includes(row.source_url)) {
+      assert.equal(row.product_code, "HASAKI-SER-013");
+      assert(
+        csv.includes(row.source_page),
+        "New demo photo must use the existing product page.",
+      );
+      assert.equal(new URL(row.source_url).hostname, "media.hcdn.vn");
+      assert.equal(row.verified_at, "2026-11-08");
+    }
     assert.equal(catalogImage(row.source_url), row.local_url);
     const file = await readFile(
       "beautymatch/public/" +

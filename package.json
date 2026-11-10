@@ -18,6 +18,7 @@
     "test:consistency": "node scripts/verify_request_consistency.mjs",
     "test:portal:notifications": "node scripts/verify_portal_notifications.mjs",
     "test:self-service": "node scripts/verify_self_service.mjs",
+    "test:demo:photos": "node scripts/verify_demo_photos.mjs",
     "test:crm:native:flow": "node scripts/verify_crm_native.mjs --exercise-flow"
   },
   "devDependencies": {
